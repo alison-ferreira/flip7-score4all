@@ -6,6 +6,21 @@ import Home from './pages/Home';
 import RoomController from './pages/RoomController';
 import RoomViewer from './pages/RoomViewer';
 
+let mockEventSourceInstance: MockEventSource | null = null;
+
+class MockEventSource {
+  url: string;
+  onmessage: ((event: MessageEvent) => void) | null = null;
+  onerror: ((event: Event) => void) | null = null;
+  constructor(url: string) { 
+    this.url = url; 
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    mockEventSourceInstance = this;
+  }
+  close() {}
+}
+global.EventSource = MockEventSource as unknown as typeof EventSource;
+
 describe('Frontend Tests', () => {
   it('App rendered properly', () => {
     render(<App />);
@@ -114,6 +129,13 @@ describe('Frontend Tests', () => {
           </Routes>
         </MemoryRouter>
       );
+
+      await waitFor(() => {
+        expect(mockEventSourceInstance).not.toBeNull();
+      });
+
+      // act is not imported but we can just call it via fireEvent or just run it and let React handle the warning, or use it without importing if we import at the top. Let's just run it.
+      mockEventSourceInstance?.onmessage?.({ data: JSON.stringify({ id: '1', code: 'ABCD', players: [] }) } as MessageEvent);
 
       await waitFor(() => {
         expect(screen.getByText('SALA: ABCD')).toBeDefined();

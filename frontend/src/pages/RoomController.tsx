@@ -1,31 +1,15 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import ScoreKeypad from '../components/ScoreKeypad'
-import { Room, Player } from '../types'
+import { Player } from '../types'
+import { useRoomSync } from '../hooks/useRoomSync'
 
 export default function RoomController() {
   const { code } = useParams<{ code: string }>()
-  const [room, setRoom] = useState<Room | null>(null)
+  const { room, setRoom } = useRoomSync(code)
   const [localPlayerName, setLocalPlayerName] = useState('')
   const [calcPlayer, setCalcPlayer] = useState<Player | null>(null)
-
-  // Polling loop to get new remote players
-  useEffect(() => {
-    const fetchRoom = async () => {
-      try {
-        const res = await fetch(`/api/rooms/${code}`)
-        if (res.ok) {
-          const data = await res.json()
-          setRoom(data)
-        }
-      } catch (e) {
-        console.error(e)
-      }
-    }
-    fetchRoom()
-    const interval = setInterval(fetchRoom, 2000)
-    return () => clearInterval(interval)
-  }, [code])
+  const [roundScores, setRoundScores] = useState<Record<string, number>>({})
 
   const saveRoomState = async (updatedPlayers: Player[]) => {
     if (!room) return
@@ -74,33 +58,52 @@ export default function RoomController() {
   }
 
   const handleScoreConfirm = (points: number) => {
-    if (calcPlayer && room) {
-      const updatedPlayers = room.players.map(p => {
-        if (p.id === calcPlayer.id) {
-          return { ...p, score: p.score + points }
-        }
-        return p
-      })
-      saveRoomState(updatedPlayers)
+    if (calcPlayer) {
+      setRoundScores(prev => ({
+        ...prev,
+        [calcPlayer.id]: (prev[calcPlayer.id] || 0) + points
+      }))
     }
     setCalcPlayer(null) // Fecha o modal
   }
 
+  const finishRound = async () => {
+    if (!room) return
+    try {
+      const res = await fetch(`/api/rooms/${room.id}/round/finish`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roundScores })
+      })
+      if (res.ok) {
+        setRoundScores({})
+      }
+    } catch (e) {
+      console.error('Erro ao finalizar rodada', e)
+    }
+  }
+
   if (!room) return <div className="container"><p style={{ textAlign: 'center', width: '100%' }}>Carregando sala...</p></div>
 
-  const rankedPlayers = [...room.players].sort((a, b) => b.score - a.score)
+  const rankedPlayers = [...room.players].map(p => ({
+    ...p,
+    displayScore: p.score + (roundScores[p.id] || 0)
+  })).sort((a, b) => b.displayScore - a.displayScore)
 
   return (
     <div className="container">
       <header className="room-header">
-        <h1>Controlador</h1>
+        <h1>Controlador - Rodada {room.round}</h1>
         <div className="room-code">SALA: {room.code}</div>
       </header>
 
       <div className="panel">
-        <h2>
+        <h2 style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           Ranking & Ações
-          <button className="btn-secondary" style={{fontSize: 12}} onClick={resetGame}>Reiniciar Jogo</button>
+          <div>
+            <button className="btn-secondary" style={{fontSize: 12, marginRight: '8px'}} onClick={resetGame}>Reiniciar</button>
+            <button className="btn-primary" style={{fontSize: 12, backgroundColor: 'var(--success)'}} aria-label="Finalizar Rodada" onClick={finishRound}>Finalizar Rodada</button>
+          </div>
         </h2>
 
         <form className="input-group" onSubmit={addLocalPlayer}>
@@ -129,7 +132,11 @@ export default function RoomController() {
                     {p.name}
                     {p.isLocal && <span className="local-badge">Local</span>}
                   </div>
-                  <div className="player-score">{p.score} pontos</div>
+                  <div className="player-score">
+                    {p.displayScore} pontos
+                    {roundScores[p.id] > 0 && <span style={{ color: 'var(--success)', marginLeft: 8 }}>(+{roundScores[p.id]})</span>}
+                    {roundScores[p.id] < 0 && <span style={{ color: 'var(--error)', marginLeft: 8 }}>({roundScores[p.id]})</span>}
+                  </div>
                 </div>
                 <div className="actions">
                   <button className="btn-round" onClick={() => setCalcPlayer(p)}>+ Rodada</button>

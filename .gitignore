@@ -46,3 +46,4 @@ Thumbs.db
 # Ignorados específicos do projeto
 .agents/
 spec-driven-development/
+tasks/
