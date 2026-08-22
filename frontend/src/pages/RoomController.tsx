@@ -1,94 +1,54 @@
-import React, { useState } from 'react'
-import { useParams } from 'react-router-dom'
-import ScoreKeypad from '../components/ScoreKeypad'
-import { Player } from '../types'
-import { useRoomSync } from '../hooks/useRoomSync'
+import { useState, FormEvent } from 'react';
+import { useParams } from 'react-router-dom';
+import ScoreKeypad from '../components/ScoreKeypad';
+import ControllerPlayerRow from '../components/ControllerPlayerRow';
+import { Player } from '../types';
+import { useRoomSync } from '../hooks/useRoomSync';
+import { saveRoomState, finishRound as apiFinishRound } from '../lib/api/roomApi';
 
 export default function RoomController() {
-  const { code } = useParams<{ code: string }>()
-  const { room, setRoom } = useRoomSync(code)
-  const [localPlayerName, setLocalPlayerName] = useState('')
-  const [calcPlayer, setCalcPlayer] = useState<Player | null>(null)
-  const [roundScores, setRoundScores] = useState<Record<string, number>>({})
+  const { code } = useParams<{ code: string }>();
+  const { room, setRoom } = useRoomSync(code);
+  const [localPlayerName, setLocalPlayerName] = useState('');
+  const [calcPlayer, setCalcPlayer] = useState<Player | null>(null);
+  const [roundScores, setRoundScores] = useState<Record<string, number>>({});
 
-  const saveRoomState = async (updatedPlayers: Player[]) => {
-    if (!room) return
-    try {
-      await fetch(`/api/rooms/${room.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ players: updatedPlayers })
-      })
-      setRoom({ ...room, players: updatedPlayers })
-    } catch (e) {
-      console.error('Erro ao atualizar sala', e)
-    }
+  function handleSavePlayers(updatedPlayers: Player[]): void {
+    if (!room) return;
+    saveRoomState(room.id, updatedPlayers).then(setRoom).catch(console.error);
   }
 
-  const addLocalPlayer = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!localPlayerName.trim()) return
-
+  function handleAddLocalPlayer(e: FormEvent): void {
+    e.preventDefault();
+    if (!localPlayerName.trim()) return;
     const newPlayer: Player = {
       id: Date.now().toString(),
       name: localPlayerName.trim(),
       score: 0,
-      isLocal: true
-    }
-
-    const updatedPlayers = [...(room?.players || []), newPlayer]
-    saveRoomState(updatedPlayers)
-    setLocalPlayerName('')
+      isLocal: true,
+      positionDelta: 0,
+    };
+    handleSavePlayers([...(room?.players || []), newPlayer]);
+    setLocalPlayerName('');
   }
 
-  const removePlayer = (id: string) => {
-    if (confirm('Remover jogador do ranking?')) {
-      if (!room) return
-      const updatedPlayers = room.players.filter(p => p.id !== id)
-      saveRoomState(updatedPlayers)
-    }
-  }
-
-  const resetGame = () => {
-    if (confirm('Deseja zerar a pontuação de todos os jogadores?')) {
-      if (!room) return
-      const updatedPlayers = room.players.map(p => ({ ...p, score: 0 }))
-      saveRoomState(updatedPlayers)
-    }
-  }
-
-  const handleScoreConfirm = (points: number) => {
+  function handleScoreConfirm(points: number): void {
     if (calcPlayer) {
-      setRoundScores(prev => ({
-        ...prev,
-        [calcPlayer.id]: (prev[calcPlayer.id] || 0) + points
-      }))
+      setRoundScores((prev) => ({ ...prev, [calcPlayer.id]: (prev[calcPlayer.id] || 0) + points }));
     }
-    setCalcPlayer(null) // Fecha o modal
+    setCalcPlayer(null);
   }
 
-  const finishRound = async () => {
-    if (!room) return
-    try {
-      const res = await fetch(`/api/rooms/${room.id}/round/finish`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ roundScores })
-      })
-      if (res.ok) {
-        setRoundScores({})
-      }
-    } catch (e) {
-      console.error('Erro ao finalizar rodada', e)
-    }
+  function handleFinishRound(): void {
+    if (!room) return;
+    apiFinishRound(room.id, roundScores).then(() => setRoundScores({})).catch(console.error);
   }
 
-  if (!room) return <div className="container"><p style={{ textAlign: 'center', width: '100%' }}>Carregando sala...</p></div>
+  if (!room) return <div className="container"><p className="w-full text-center">Carregando sala...</p></div>;
 
-  const rankedPlayers = [...room.players].map(p => ({
-    ...p,
-    displayScore: p.score + (roundScores[p.id] || 0)
-  })).sort((a, b) => b.displayScore - a.displayScore)
+  const rankedPlayers = [...room.players]
+    .map((p) => ({ ...p, displayScore: p.score + (roundScores[p.id] || 0) }))
+    .sort((a, b) => b.displayScore - a.displayScore);
 
   return (
     <div className="container">
@@ -98,63 +58,35 @@ export default function RoomController() {
       </header>
 
       <div className="panel">
-        <h2 style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h2 className="flex justify-between items-center">
           Ranking & Ações
           <div>
-            <button className="btn-secondary" style={{fontSize: 12, marginRight: '8px'}} onClick={resetGame}>Reiniciar</button>
-            <button className="btn-primary" style={{fontSize: 12, backgroundColor: 'var(--success)'}} aria-label="Finalizar Rodada" onClick={finishRound}>Finalizar Rodada</button>
+            <button className="mr-2 text-xs btn-secondary" onClick={() => room && handleSavePlayers(room.players.map((p) => ({ ...p, score: 0, positionDelta: 0 })))}>Reiniciar</button>
+            <button className="text-xs bg-emerald-600 btn-primary" aria-label="Finalizar Rodada" onClick={handleFinishRound}>Finalizar Rodada</button>
           </div>
         </h2>
 
-        <form className="input-group" onSubmit={addLocalPlayer}>
-          <input 
-            type="text" 
-            placeholder="Adicionar jogador presencial..." 
-            value={localPlayerName}
-            onChange={(e) => setLocalPlayerName(e.target.value)}
-            required
-          />
+        <form className="input-group" onSubmit={handleAddLocalPlayer}>
+          <input type="text" placeholder="Adicionar jogador presencial..." value={localPlayerName} onChange={(e) => setLocalPlayerName(e.target.value)} required />
           <button type="submit" className="btn-primary">Add</button>
         </form>
 
         <div className="ranking-list">
-          {rankedPlayers.length === 0 && (
-            <div style={{color: 'var(--text-muted)', textAlign: 'center'}}>Nenhum jogador.</div>
-          )}
-          {rankedPlayers.map((p, i) => {
-            const isFirst = i === 0 && p.score > 0
-            const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}º`
-            return (
-              <div key={p.id} className={`player-row ${isFirst ? 'first' : ''}`}>
-                <div className="rank-pos">{medal}</div>
-                <div className="player-details">
-                  <div className="player-name">
-                    {p.name}
-                    {p.isLocal && <span className="local-badge">Local</span>}
-                  </div>
-                  <div className="player-score">
-                    {p.displayScore} pontos
-                    {roundScores[p.id] > 0 && <span style={{ color: 'var(--success)', marginLeft: 8 }}>(+{roundScores[p.id]})</span>}
-                    {roundScores[p.id] < 0 && <span style={{ color: 'var(--error)', marginLeft: 8 }}>({roundScores[p.id]})</span>}
-                  </div>
-                </div>
-                <div className="actions">
-                  <button className="btn-round" onClick={() => setCalcPlayer(p)}>+ Rodada</button>
-                  <button className="btn-del" onClick={() => removePlayer(p.id)}>✕</button>
-                </div>
-              </div>
-            )
-          })}
+          {rankedPlayers.length === 0 && <div className="text-center text-slate-400">Nenhum jogador.</div>}
+          {rankedPlayers.map((p, i) => (
+            <ControllerPlayerRow
+              key={p.id}
+              player={p}
+              index={i}
+              roundScore={roundScores[p.id] || 0}
+              onOpenKeypad={setCalcPlayer}
+              onRemove={(id) => room && handleSavePlayers(room.players.filter((item) => item.id !== id))}
+            />
+          ))}
         </div>
       </div>
 
-      {calcPlayer && (
-        <ScoreKeypad 
-          player={calcPlayer} 
-          onConfirm={handleScoreConfirm} 
-          onCancel={() => setCalcPlayer(null)} 
-        />
-      )}
+      {calcPlayer && <ScoreKeypad player={calcPlayer} onConfirm={handleScoreConfirm} onCancel={() => setCalcPlayer(null)} />}
     </div>
-  )
+  );
 }

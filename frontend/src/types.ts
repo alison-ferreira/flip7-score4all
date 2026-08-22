@@ -3,7 +3,7 @@ export type Player = {
   name: string;
   score: number;
   isLocal: boolean;
-  positionDelta?: number;
+  positionDelta: number;
 };
 
 export type Room = {

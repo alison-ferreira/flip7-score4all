@@ -4,7 +4,7 @@ import ScoreKeypad from './ScoreKeypad';
 import { Player } from '../types';
 
 describe('ScoreKeypad', () => {
-  const mockPlayer: Player = { id: '1', name: 'Alice', score: 0, isLocal: false };
+  const mockPlayer: Player = { id: '1', name: 'Alice', score: 0, isLocal: false, positionDelta: 0 };
 
   it('renders correctly', () => {
     const onConfirm = vi.fn();

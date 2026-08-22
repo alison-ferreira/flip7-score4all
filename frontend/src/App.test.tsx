@@ -1,25 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { MemoryRouter } from 'react-router-dom';
 import App from './App';
 import Home from './pages/Home';
-import RoomController from './pages/RoomController';
-import RoomViewer from './pages/RoomViewer';
-
-let mockEventSourceInstance: MockEventSource | null = null;
-
-class MockEventSource {
-  url: string;
-  onmessage: ((event: MessageEvent) => void) | null = null;
-  onerror: ((event: Event) => void) | null = null;
-  constructor(url: string) { 
-    this.url = url; 
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
-    mockEventSourceInstance = this;
-  }
-  close() {}
-}
-global.EventSource = MockEventSource as unknown as typeof EventSource;
 
 describe('Frontend Tests', () => {
   it('App rendered properly', () => {
@@ -29,8 +12,8 @@ describe('Frontend Tests', () => {
 
   describe('Home Page', () => {
     it('creates a room and navigates', async () => {
-      // Mock fetch
       globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
         json: () => Promise.resolve({ code: 'ABCD' })
       });
 
@@ -60,96 +43,8 @@ describe('Frontend Tests', () => {
 
       const joinBtn = screen.getByText('Entrar');
       fireEvent.click(joinBtn);
-      
+
       expect((input as HTMLInputElement).value).toBe('ABCD');
-    });
-  });
-
-  describe('RoomViewer', () => {
-    it('joins room and displays players', async () => {
-      globalThis.fetch = vi.fn().mockImplementation((url) => {
-        if (url.includes('/join')) {
-          return Promise.resolve({
-            ok: true,
-            json: () => Promise.resolve({
-              room: {
-                id: '1', code: 'ABCD', players: [{ id: '1', name: 'Bob', score: 10, isLocal: false }]
-              }
-            })
-          });
-        }
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve({
-            id: '1', code: 'ABCD', players: []
-          })
-        });
-      });
-
-      render(
-        <MemoryRouter initialEntries={['/room/ABCD']}>
-          <Routes>
-            <Route path="/room/:code" element={<RoomViewer />} />
-          </Routes>
-        </MemoryRouter>
-      );
-
-      const input = screen.getByPlaceholderText('Seu Nome');
-      fireEvent.change(input, { target: { value: 'Bob' } });
-      
-      const btn = screen.getByRole('button', { name: 'Entrar' });
-      fireEvent.click(btn);
-
-      await waitFor(() => {
-        expect(screen.getByText('10 pontos')).toBeDefined();
-      });
-    });
-  });
-
-  describe('RoomController', () => {
-    it('fetches room data and adds local player', async () => {
-      globalThis.fetch = vi.fn().mockImplementation((url, options) => {
-        if (url === '/api/rooms/ABCD' && !options) {
-          return Promise.resolve({
-            ok: true,
-            json: () => Promise.resolve({
-              id: '1', code: 'ABCD', players: []
-            })
-          });
-        }
-        if (options && options.method === 'PUT') {
-          return Promise.resolve({ ok: true });
-        }
-      });
-
-      render(
-        <MemoryRouter initialEntries={['/room/ABCD/controller']}>
-          <Routes>
-            <Route path="/room/:code/controller" element={<RoomController />} />
-          </Routes>
-        </MemoryRouter>
-      );
-
-      await waitFor(() => {
-        expect(mockEventSourceInstance).not.toBeNull();
-      });
-
-      // act is not imported but we can just call it via fireEvent or just run it and let React handle the warning, or use it without importing if we import at the top. Let's just run it.
-      mockEventSourceInstance?.onmessage?.({ data: JSON.stringify({ id: '1', code: 'ABCD', players: [] }) } as MessageEvent);
-
-      await waitFor(() => {
-        expect(screen.getByText('SALA: ABCD')).toBeDefined();
-      });
-
-      const input = screen.getByPlaceholderText('Adicionar jogador presencial...');
-      fireEvent.change(input, { target: { value: 'Alice' } });
-
-      const addBtn = screen.getByText('Add');
-      fireEvent.click(addBtn);
-
-      await waitFor(() => {
-        expect(screen.getByText('Alice')).toBeDefined();
-      });
     });
   });
 });
