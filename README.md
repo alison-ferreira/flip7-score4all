@@ -17,6 +17,8 @@
 
 O **Flip7 Score4All** é uma aplicação web moderna projetada para transformar a experiência de contagem de pontos e acompanhamento de partidas do jogo de cartas **Flip 7**.
 
+As regras completas e detalhadas do jogo de cartas Flip 7 (visão geral, estrutura do baralho, dinâmicas de rodada e cálculo de pontuação) estão registradas no arquivo [`RULES.md`](RULES.md).
+
 A aplicação divide o fluxo em duas visões sincronizadas:
 1. **Painel do Controlador (Mestre da Mesa):** Permite criar salas, adicionar participantes, utilizar um teclado tátil customizado (`ScoreKeypad`) para inserir pontos com rapidez e controlar as rodadas.
 2. **Visão dos Participantes / Display Público:** Exibe o ranking geral em tempo real com animações de reordenação (Framer Motion), ocultando pontos parciais durante a rodada ativa até a revelação em lote pelo controlador.
@@ -130,14 +132,14 @@ Os serviços estarão disponíveis em:
 ## ⚙️ Variáveis de Ambiente
 
 ### Backend (`backend/.env`)
-Consulte o arquivo [`backend/.env.example`](file:///home/alison/workspace/flip7-score4all/backend/.env.example):
+Consulte o arquivo [`backend/.env.example`](backend/.env.example):
 ```env
 PORT=3000
 NODE_ENV=development
 ```
 
 ### Frontend (`frontend/.env`)
-Consulte o arquivo [`frontend/.env.example`](file:///home/alison/workspace/flip7-score4all/frontend/.env.example):
+Consulte o arquivo [`frontend/.env.example`](frontend/.env.example):
 ```env
 VITE_API_URL=http://localhost:3000
 ```
@@ -213,10 +215,10 @@ flip7-score4all/
 
 ## 🤝 Contribuição
 
-Contribuições são super bem-vindas! Por favor, leia nosso arquivo [`CONTRIBUTING.md`](file:///home/alison/workspace/flip7-score4all/CONTRIBUTING.md) para saber mais sobre os padrões de código, fluxo de trabalho com Git e execução dos testes antes de abrir uma Pull Request.
+Contribuições são super bem-vindas! Por favor, leia nosso arquivo [`CONTRIBUTING.md`](CONTRIBUTING.md) para saber mais sobre os padrões de código, fluxo de trabalho com Git e execução dos testes antes de abrir uma Pull Request.
 
 ---
 
 ## 📄 Licença
 
-Este projeto está licenciado sob a licença [MIT](file:///home/alison/workspace/flip7-score4all/LICENSE).
+Este projeto está licenciado sob a licença [MIT](LICENSE).
