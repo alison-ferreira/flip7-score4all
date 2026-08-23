@@ -22,5 +22,6 @@ test('cria sala e navega para o controlador', async ({ page }) => {
   await page.getByText('10', { exact: true }).click();
   await page.getByRole('button', { name: 'Confirmar' }).click();
   
-  await expect(page.getByText('10 pontos')).toBeVisible();
+  await expect(page.getByText('0 pontos')).toBeVisible();
+  await expect(page.getByText('+10 rodada')).toBeVisible();
 });

@@ -49,7 +49,7 @@ test.describe('Captura de Evidências Visuais - Controle de Rodadas', () => {
     await homePage.getByText('10', { exact: true }).click();
     await homePage.getByRole('button', { name: 'Confirmar' }).click();
 
-    await expect(bobRowController.getByText('(+10)')).toBeVisible();
+    await expect(bobRowController.getByText('+10 rodada')).toBeVisible();
     await homePage.screenshot({ path: path.join(EVIDENCES_DIR, '02-controller-round-1-partials.png') });
 
     // 5. Validar que visão do participante continua em 0 pontos (CA-02)

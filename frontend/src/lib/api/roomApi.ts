@@ -1,4 +1,4 @@
-import { Room, Player, PlayerStatus } from '../../types';
+import { Room, Player, PlayerStatus, PlayerRoundDraft } from '../../types';
 
 export async function createRoom(): Promise<Room> {
   const res = await fetch('/api/rooms', { method: 'POST' });
@@ -26,11 +26,11 @@ export async function joinRoom(code: string, name: string): Promise<{ room: Room
   return res.json();
 }
 
-export async function finishRound(roomId: string, roundScores: Record<string, number>): Promise<Room> {
+export async function finishRound(roomId: string, roundScores?: Record<string, number>): Promise<Room> {
   const res = await fetch(`/api/rooms/${roomId}/round/finish`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ roundScores })
+    body: roundScores ? JSON.stringify({ roundScores }) : JSON.stringify({})
   });
   if (!res.ok) throw new Error('Erro ao finalizar rodada');
   return res.json();
@@ -53,4 +53,15 @@ export async function setDealer(roomId: string, playerId: string): Promise<Room>
   if (!res.ok) throw new Error('Erro ao definir dealer');
   return res.json();
 }
+
+export async function updatePlayerDraft(roomId: string, playerId: string, draft: PlayerRoundDraft): Promise<Room> {
+  const res = await fetch(`/api/rooms/${roomId}/player/${playerId}/draft`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(draft)
+  });
+  if (!res.ok) throw new Error('Erro ao atualizar rascunho do jogador');
+  return res.json();
+}
+
 

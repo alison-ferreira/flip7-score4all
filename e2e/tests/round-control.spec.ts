@@ -47,8 +47,9 @@ test.describe('Controle de Rodadas - E2E', () => {
     await controllerPage.getByText('10', { exact: true }).click();
     await controllerPage.getByRole('button', { name: 'Confirmar' }).click();
 
-    // No controlador, exibe a parcial (+10)
-    await expect(bobRowController.getByText('(+10)')).toBeVisible();
+    // No controlador, exibe pontuação consolidada (0 pontos) e o badge da rodada em andamento (+10 rodada)
+    await expect(bobRowController.getByText('0 pontos')).toBeVisible();
+    await expect(bobRowController.getByText('+10 rodada')).toBeVisible();
 
     // 4. Validar que na visão do participante a pontuação de Bob NÃO mudou (Subtarefa 7.3 / CA-02)
     const bobRowParticipant = participantPage.locator('.player-row', { hasText: 'Bob' });

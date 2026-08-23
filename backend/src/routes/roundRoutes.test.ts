@@ -7,10 +7,10 @@ describe('POST /api/rooms/:roomId/round/finish', () => {
     Object.keys(db).forEach((key) => delete db[key]);
   });
 
-  it('deve retornar 400 se roundScores não for fornecido', async () => {
+  it('deve retornar 400 se roundScores for fornecido com tipo inválido', async () => {
     const createResponse = await request(app).post('/api/rooms');
     const { id } = createResponse.body;
-    const response = await request(app).post(`/api/rooms/${id}/round/finish`).send({});
+    const response = await request(app).post(`/api/rooms/${id}/round/finish`).send({ roundScores: 'invalid' });
     expect(response.status).toBe(400);
   });
 

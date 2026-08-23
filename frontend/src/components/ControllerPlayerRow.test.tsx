@@ -4,11 +4,10 @@ import ControllerPlayerRow from './ControllerPlayerRow';
 import { Player } from '../types';
 
 describe('ControllerPlayerRow', () => {
-  const mockPlayer: Player & { displayScore: number } = {
+  const mockPlayer: Player = {
     id: 'p1',
     name: 'Alison',
     score: 10,
-    displayScore: 10,
     isLocal: true,
     positionDelta: 0,
     status: 'playing',
@@ -25,7 +24,6 @@ describe('ControllerPlayerRow', () => {
       <ControllerPlayerRow
         player={mockPlayer}
         index={0}
-        roundScore={0}
         onOpenKeypad={onOpenKeypad}
         onRemove={onRemove}
         onUpdateStatus={onUpdateStatus}
@@ -36,6 +34,32 @@ describe('ControllerPlayerRow', () => {
     expect(screen.getByText('Alison')).toBeDefined();
     expect(screen.getByRole('button', { name: 'Definir como Dealer' })).toBeDefined();
     expect(screen.getByText('Jogando')).toBeDefined();
+    expect(screen.getByText('10 pontos')).toBeDefined();
+  });
+
+  it('renders round draft badge when roundDraft is present', () => {
+    const playerWithDraft: Player = {
+      ...mockPlayer,
+      roundDraft: {
+        selectedNumbers: [10],
+        selectedBonus: [],
+        isMultiplierActive: false,
+        total: 10,
+      },
+    };
+
+    render(
+      <ControllerPlayerRow
+        player={playerWithDraft}
+        index={0}
+        onOpenKeypad={vi.fn()}
+        onRemove={vi.fn()}
+      />
+    );
+
+    expect(screen.getByTestId('controller-round-draft-badge')).toBeDefined();
+    expect(screen.getByText('+10 rodada')).toBeDefined();
+    expect(screen.getByText('10 pontos')).toBeDefined();
   });
 
   it('triggers onUpdateStatus when status option is clicked', () => {
@@ -48,7 +72,6 @@ describe('ControllerPlayerRow', () => {
       <ControllerPlayerRow
         player={mockPlayer}
         index={0}
-        roundScore={0}
         onOpenKeypad={onOpenKeypad}
         onRemove={onRemove}
         onUpdateStatus={onUpdateStatus}
@@ -72,7 +95,6 @@ describe('ControllerPlayerRow', () => {
       <ControllerPlayerRow
         player={mockPlayer}
         index={0}
-        roundScore={0}
         onOpenKeypad={onOpenKeypad}
         onRemove={onRemove}
         onUpdateStatus={onUpdateStatus}

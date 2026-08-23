@@ -3,9 +3,8 @@ import PlayerStatusSelector from './PlayerStatusSelector';
 import DealerButton from './DealerButton';
 
 type ControllerPlayerRowProps = {
-  player: Player & { displayScore: number };
+  player: Player;
   index: number;
-  roundScore: number;
   onOpenKeypad: (player: Player) => void;
   onRemove: (id: string) => void;
   onUpdateStatus?: (playerId: string, status: PlayerStatus) => void;
@@ -15,7 +14,6 @@ type ControllerPlayerRowProps = {
 export default function ControllerPlayerRow({
   player,
   index,
-  roundScore,
   onOpenKeypad,
   onRemove,
   onUpdateStatus,
@@ -23,6 +21,8 @@ export default function ControllerPlayerRow({
 }: ControllerPlayerRowProps) {
   const isFirst = index === 0 && player.score > 0;
   const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}º`;
+  const roundDraftTotal = player.roundDraft?.total;
+
   return (
     <div className={`player-row ${isFirst ? 'first' : ''}`}>
       <div className="rank-pos">{medal}</div>
@@ -31,10 +31,28 @@ export default function ControllerPlayerRow({
           {player.name}
           {player.isLocal && <span className="local-badge">Local</span>}
         </div>
-        <div className="player-score">
-          {player.displayScore} pontos
-          {roundScore > 0 && <span className="ml-2 text-emerald-400">(+{roundScore})</span>}
-          {roundScore < 0 && <span className="ml-2 text-rose-400">({roundScore})</span>}
+        <div className="flex items-center gap-2 mt-1">
+          <div className="player-score">{player.score} pontos</div>
+          {roundDraftTotal !== undefined && roundDraftTotal > 0 && (
+            <span
+              className="px-2 py-0.5 rounded text-xs border bg-amber-500/20 text-amber-300 border-amber-500/50 font-semibold"
+              aria-label={`Pontos da rodada: +${roundDraftTotal}`}
+              title="Pontuação da rodada em andamento"
+              data-testid="controller-round-draft-badge"
+            >
+              +{roundDraftTotal} rodada
+            </span>
+          )}
+          {roundDraftTotal !== undefined && roundDraftTotal < 0 && (
+            <span
+              className="px-2 py-0.5 rounded text-xs border bg-rose-500/20 text-rose-300 border-rose-500/50 font-semibold"
+              aria-label={`Pontos da rodada: ${roundDraftTotal}`}
+              title="Pontuação da rodada em andamento"
+              data-testid="controller-round-draft-badge"
+            >
+              {roundDraftTotal} rodada
+            </span>
+          )}
         </div>
       </div>
       <div className="actions">

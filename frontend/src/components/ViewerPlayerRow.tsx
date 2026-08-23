@@ -45,6 +45,26 @@ export default function ViewerPlayerRow({ player, index, isCurrentViewer }: View
         </div>
         <div className="flex items-center gap-2 mt-1">
           <div className="player-score">{player.score} pontos</div>
+          {player.roundDraft && player.roundDraft.total > 0 && (
+            <span
+              className="px-2 py-0.5 rounded text-xs border bg-amber-500/20 text-amber-300 border-amber-500/50 font-semibold"
+              aria-label={`Pontos da rodada: +${player.roundDraft.total}`}
+              title="Pontuação da rodada em andamento"
+              data-testid="viewer-round-draft-badge"
+            >
+              +{player.roundDraft.total} rodada
+            </span>
+          )}
+          {player.roundDraft && player.roundDraft.total < 0 && (
+            <span
+              className="px-2 py-0.5 rounded text-xs border bg-rose-500/20 text-rose-300 border-rose-500/50 font-semibold"
+              aria-label={`Pontos da rodada: ${player.roundDraft.total}`}
+              title="Pontuação da rodada em andamento"
+              data-testid="viewer-round-draft-badge"
+            >
+              {player.roundDraft.total} rodada
+            </span>
+          )}
           <span
             className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs border ${statusCfg.bgClass}`}
             aria-label={`Status: ${statusCfg.label}`}

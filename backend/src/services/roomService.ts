@@ -1,18 +1,10 @@
 import { v4 as uuidv4 } from 'uuid';
 import { Response } from 'express';
-import { PlayerStatus, Player, Room, db, clients, subscribeToRoom, broadcastRoomUpdate } from './roomTypes';
+import { PlayerStatus, PlayerRoundDraft, Player, Room, db, clients, subscribeToRoom, broadcastRoomUpdate } from './roomTypes';
+import { generateShortCode, updateScoresAndCalculateDeltas } from './roomUtils';
 
-export type { PlayerStatus, Player, Room };
+export type { PlayerStatus, PlayerRoundDraft, Player, Room };
 export { db, clients };
-
-export function generateShortCode(): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let result = '';
-  for (let i = 0; i < 4; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
-}
 
 export const RoomService = {
   createRoom(): Room {
@@ -60,6 +52,15 @@ export const RoomService = {
     return room;
   },
 
+  updatePlayerDraft(roomId: string, playerId: string, draft: PlayerRoundDraft): Room | { error: string } {
+    const room = db[roomId];
+    if (!room) return { error: 'Sala não encontrada' };
+    const player = room.players.find(p => p.id === playerId);
+    if (!player) return { error: 'Jogador não encontrado' };
+    player.roundDraft = draft;
+    return room;
+  },
+
   setDealer(roomId: string, playerId: string): Room | { error: string } {
     const room = db[roomId];
     if (!room) return { error: 'Sala não encontrada' };
@@ -73,22 +74,10 @@ export const RoomService = {
     subscribeToRoom(roomId, res);
   },
 
-  finishRound(roomId: string, roundScores: Record<string, number>): Room | { error: string } {
+  finishRound(roomId: string, roundScores?: Record<string, number>): Room | { error: string } {
     const room = db[roomId];
     if (!room) return { error: 'Sala não encontrada' };
-    const oldRanking = [...room.players].sort((a, b) => b.score - a.score);
-    const oldPositions = new Map<string, number>();
-    oldRanking.forEach((p, index) => oldPositions.set(p.id, index));
-    room.players.forEach(p => {
-      p.score += (roundScores[p.id] || 0);
-      p.status = 'playing';
-    });
-    const newRanking = [...room.players].sort((a, b) => b.score - a.score);
-    const newPositions = new Map<string, number>();
-    newRanking.forEach((p, index) => newPositions.set(p.id, index));
-    room.players.forEach(p => {
-      p.positionDelta = (oldPositions.get(p.id) ?? 0) - (newPositions.get(p.id) ?? 0);
-    });
+    updateScoresAndCalculateDeltas(room.players, p => p.roundDraft ? p.roundDraft.total : (roundScores?.[p.id] || 0));
     room.round += 1;
     return room;
   },

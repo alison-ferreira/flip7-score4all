@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { RoomService } from '../services/roomService';
-import { handleUpdatePlayerStatus, handleSetDealer } from './playerHandlers';
+import { handleUpdatePlayerStatus, handleSetDealer, handleUpdatePlayerDraft } from './playerHandlers';
 
 const router = Router();
 
@@ -45,6 +45,8 @@ router.put('/:roomId/player/:playerId/status', handleUpdatePlayerStatus);
 
 router.put('/:roomId/dealer/:playerId', handleSetDealer);
 
+router.put('/:roomId/player/:playerId/draft', handleUpdatePlayerDraft);
+
 router.post('/:idOrCode/join', (req: Request, res: Response) => {
   const idOrCode = req.params.idOrCode as string;
   const { name } = req.body;
@@ -66,9 +68,9 @@ router.post('/:idOrCode/join', (req: Request, res: Response) => {
 
 router.post('/:roomId/round/finish', (req: Request, res: Response) => {
   const roomId = req.params.roomId as string;
-  const { roundScores } = req.body;
-  if (!roundScores || typeof roundScores !== 'object') {
-    res.status(400).json({ error: 'roundScores é obrigatório e deve ser um objeto' });
+  const roundScores = req.body?.roundScores;
+  if (roundScores !== undefined && typeof roundScores !== 'object') {
+    res.status(400).json({ error: 'roundScores deve ser um objeto' });
     return;
   }
   const result = RoomService.finishRound(roomId, roundScores);

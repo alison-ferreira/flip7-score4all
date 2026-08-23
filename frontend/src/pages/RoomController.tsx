@@ -3,16 +3,23 @@ import { useParams } from 'react-router-dom';
 import ScoreKeypad from '../components/ScoreKeypad';
 import ControllerPlayerRow from '../components/ControllerPlayerRow';
 import ControllerHeader from '../components/ControllerHeader';
-import { Player, PlayerStatus } from '../types';
+import { Player, PlayerStatus, PlayerRoundDraft } from '../types';
 import { useRoomSync } from '../hooks/useRoomSync';
-import { saveRoomState, finishRound as apiFinishRound, updatePlayerStatus, setDealer } from '../lib/api/roomApi';
+import { saveRoomState, finishRound as apiFinishRound, updatePlayerStatus, setDealer, updatePlayerDraft } from '../lib/api/roomApi';
 
 export default function RoomController() {
   const { code } = useParams<{ code: string }>();
   const { room, setRoom } = useRoomSync(code);
   const [localPlayerName, setLocalPlayerName] = useState('');
   const [calcPlayer, setCalcPlayer] = useState<Player | null>(null);
-  const [roundScores, setRoundScores] = useState<Record<string, number>>({});
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  function showToast(message: string): void {
+    setToastMessage(message);
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 3000);
+  }
 
   function handleSavePlayers(updatedPlayers: Player[]): void {
     if (room) saveRoomState(room.id, updatedPlayers).then(setRoom).catch(console.error);
@@ -26,13 +33,27 @@ export default function RoomController() {
     setLocalPlayerName('');
   }
 
-  function handleScoreConfirm(points: number): void {
-    if (calcPlayer) setRoundScores((prev) => ({ ...prev, [calcPlayer.id]: (prev[calcPlayer.id] || 0) + points }));
+  function handleScoreConfirm(_points: number, draft?: PlayerRoundDraft): void {
+    if (calcPlayer && room && draft) {
+      updatePlayerDraft(room.id, calcPlayer.id, draft)
+        .then((updatedRoom) => {
+          setRoom(updatedRoom);
+          showToast('Rascunho de pontuação salvo!');
+        })
+        .catch(console.error);
+    }
     setCalcPlayer(null);
   }
 
   function handleFinishRound(): void {
-    if (room) apiFinishRound(room.id, roundScores).then(() => setRoundScores({})).catch(console.error);
+    if (room) {
+      apiFinishRound(room.id)
+        .then((updatedRoom) => {
+          setRoom(updatedRoom);
+          showToast('Rodada finalizada com sucesso!');
+        })
+        .catch(console.error);
+    }
   }
 
   function handleUpdateStatus(playerId: string, status: PlayerStatus): void {
@@ -45,9 +66,7 @@ export default function RoomController() {
 
   if (!room) return <div className="container"><p className="w-full text-center">Carregando sala...</p></div>;
 
-  const rankedPlayers = [...room.players]
-    .map((p) => ({ ...p, displayScore: p.score + (roundScores[p.id] || 0) }))
-    .sort((a, b) => b.displayScore - a.displayScore);
+  const rankedPlayers = [...room.players].sort((a, b) => b.score - a.score);
 
   return (
     <div className="container">
@@ -67,11 +86,16 @@ export default function RoomController() {
         <div className="ranking-list">
           {rankedPlayers.length === 0 && <div className="text-center text-slate-400">Nenhum jogador.</div>}
           {rankedPlayers.map((p, i) => (
-            <ControllerPlayerRow key={p.id} player={p} index={i} roundScore={roundScores[p.id] || 0} onOpenKeypad={setCalcPlayer} onRemove={(id) => room && handleSavePlayers(room.players.filter((item) => item.id !== id))} onUpdateStatus={handleUpdateStatus} onSetDealer={handleSetDealer} />
+            <ControllerPlayerRow key={p.id} player={p} index={i} onOpenKeypad={setCalcPlayer} onRemove={(id) => room && handleSavePlayers(room.players.filter((item) => item.id !== id))} onUpdateStatus={handleUpdateStatus} onSetDealer={handleSetDealer} />
           ))}
         </div>
       </div>
-      {calcPlayer && <ScoreKeypad player={calcPlayer} onConfirm={handleScoreConfirm} onCancel={() => setCalcPlayer(null)} />}
+      {toastMessage && (
+        <div className="fixed bottom-4 right-4 bg-emerald-600 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-bounce" role="status" aria-live="polite" data-testid="toast-message">
+          {toastMessage}
+        </div>
+      )}
+      {calcPlayer && <ScoreKeypad player={calcPlayer} initialDraft={calcPlayer.roundDraft} onConfirm={handleScoreConfirm} onCancel={() => setCalcPlayer(null)} />}
     </div>
   );
 }

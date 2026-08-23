@@ -1,17 +1,25 @@
 import { useState } from 'react';
-import { Player } from '../types';
+import { Player, PlayerRoundDraft } from '../types';
 import { calculateRoundScore } from '../lib/scoreCalculator';
 
 type ScoreKeypadProps = {
   player: Player;
-  onConfirm: (total: number) => void;
+  initialDraft?: PlayerRoundDraft;
+  onConfirm: (total: number, draft?: PlayerRoundDraft) => void;
   onCancel: () => void;
 };
 
-export default function ScoreKeypad({ player, onConfirm, onCancel }: ScoreKeypadProps) {
-  const [selectedNumbers, setSelectedNumbers] = useState<Set<number>>(new Set());
-  const [selectedBonus, setSelectedBonus] = useState<Set<number>>(new Set());
-  const [isMultiplierActive, setIsMultiplierActive] = useState(false);
+export default function ScoreKeypad({ player, initialDraft, onConfirm, onCancel }: ScoreKeypadProps) {
+  const activeDraft = initialDraft ?? player.roundDraft;
+  const [selectedNumbers, setSelectedNumbers] = useState<Set<number>>(
+    () => new Set(activeDraft?.selectedNumbers || [])
+  );
+  const [selectedBonus, setSelectedBonus] = useState<Set<number>>(
+    () => new Set(activeDraft?.selectedBonus || [])
+  );
+  const [isMultiplierActive, setIsMultiplierActive] = useState<boolean>(
+    () => activeDraft?.isMultiplierActive ?? false
+  );
 
   function toggleNumber(num: number): void {
     const newSet = new Set(selectedNumbers);
@@ -35,6 +43,16 @@ export default function ScoreKeypad({ player, onConfirm, onCancel }: ScoreKeypad
 
   const { exp, total } = calculateRoundScore(selectedNumbers, selectedBonus, isMultiplierActive);
 
+  function handleConfirm(): void {
+    const draft: PlayerRoundDraft = {
+      selectedNumbers: Array.from(selectedNumbers),
+      selectedBonus: Array.from(selectedBonus),
+      isMultiplierActive,
+      total
+    };
+    onConfirm(total, draft);
+  }
+
   return (
     <div className="modal-overlay">
       <div className="modal-content">
@@ -51,37 +69,47 @@ export default function ScoreKeypad({ player, onConfirm, onCancel }: ScoreKeypad
             const isActive = selectedNumbers.has(i);
             const isDisabled = !isActive && selectedNumbers.size >= 7;
             return (
-              <div
+              <button
+                type="button"
                 key={i}
+                aria-label={`Carta ${i}`}
+                aria-pressed={isActive}
+                disabled={isDisabled}
                 className={`card-toggle ${isActive ? 'active' : ''} ${isDisabled ? 'disabled' : ''}`}
                 onClick={() => !isDisabled && toggleNumber(i)}
               >
                 {i}
-              </div>
+              </button>
             );
           })}
         </div>
         <div className="section-title">Modificadores de Ponto</div>
         <div className="bonus-grid">
-          <div
+          <button
+            type="button"
+            aria-label="Multiplicador 2x"
+            aria-pressed={isMultiplierActive}
             className={`bonus-toggle mult-toggle ${isMultiplierActive ? 'active' : ''}`}
             onClick={() => setIsMultiplierActive(!isMultiplierActive)}
           >
             2x
-          </div>
+          </button>
           {[2, 4, 6, 8, 10].map((val) => (
-            <div
+            <button
+              type="button"
               key={val}
+              aria-label={`Bônus +${val}`}
+              aria-pressed={selectedBonus.has(val)}
               className={`bonus-toggle ${selectedBonus.has(val) ? 'active' : ''}`}
               onClick={() => toggleBonus(val)}
             >
               +{val}
-            </div>
+            </button>
           ))}
         </div>
         <div className="modal-footer">
           <button className="btn-cancel" onClick={onCancel}>Cancelar</button>
-          <button className="btn-confirm" onClick={() => onConfirm(total)}>Confirmar</button>
+          <button className="btn-confirm" onClick={handleConfirm}>Confirmar</button>
         </div>
       </div>
     </div>

@@ -61,7 +61,7 @@ describe('ScoreKeypad', () => {
     fireEvent.click(screen.getByText('+10'));
     fireEvent.click(screen.getByText('Confirmar'));
 
-    expect(onConfirm).toHaveBeenCalledWith(15);
+    expect(onConfirm).toHaveBeenCalledWith(15, expect.objectContaining({ total: 15 }));
   });
 
   it('calls onCancel', () => {
@@ -71,5 +71,23 @@ describe('ScoreKeypad', () => {
     
     fireEvent.click(screen.getByText('Cancelar'));
     expect(onCancel).toHaveBeenCalled();
+  });
+
+  it('TU-04: initializes modal with initialDraft previous state', () => {
+    const onConfirm = vi.fn();
+    const onCancel = vi.fn();
+    const initialDraft = {
+      selectedNumbers: [2, 5],
+      selectedBonus: [4],
+      isMultiplierActive: true,
+      total: 18,
+    };
+    render(<ScoreKeypad player={mockPlayer} initialDraft={initialDraft} onConfirm={onConfirm} onCancel={onCancel} />);
+
+    expect(screen.getByText('18')).toBeDefined();
+    expect(screen.getByText('(2+5)x2+(+4)')).toBeDefined();
+
+    fireEvent.click(screen.getByText('Confirmar'));
+    expect(onConfirm).toHaveBeenCalledWith(18, initialDraft);
   });
 });
