@@ -1,25 +1,9 @@
 import { v4 as uuidv4 } from 'uuid';
 import { Response } from 'express';
-import { subscribeToRoom, broadcastRoomUpdate, clients } from './sseService';
+import { PlayerStatus, Player, Room, db, clients, subscribeToRoom, broadcastRoomUpdate } from './roomTypes';
 
-export type Player = {
-  id: string;
-  name: string;
-  score: number;
-  isLocal: boolean;
-  positionDelta: number;
-};
-
-export type Room = {
-  id: string;
-  code: string;
-  createdAt: number;
-  round: number;
-  players: Player[];
-};
-
-export const db: Record<string, Room> = {};
-export { clients };
+export type { PlayerStatus, Player, Room };
+export { db, clients };
 
 export function generateShortCode(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -60,9 +44,29 @@ export const RoomService = {
     if (!trimmedName) return { error: 'Nome é obrigatório' };
     const existingPlayer = room.players.find(p => p.name.toLowerCase() === trimmedName.toLowerCase());
     if (existingPlayer) return { room, player: existingPlayer, isNew: false };
-    const newPlayer: Player = { id: uuidv4(), name: trimmedName, score: 0, isLocal: false, positionDelta: 0 };
+    const newPlayer: Player = { id: uuidv4(), name: trimmedName, score: 0, isLocal: false, positionDelta: 0, status: 'playing', isDealer: false };
     room.players.push(newPlayer);
     return { room, player: newPlayer, isNew: true };
+  },
+
+  updatePlayerStatus(roomId: string, playerId: string, status: PlayerStatus): Room | { error: string } {
+    const room = db[roomId];
+    if (!room) return { error: 'Sala não encontrada' };
+    const validStatuses: PlayerStatus[] = ['playing', 'stopped', 'bust', 'frozen'];
+    if (!validStatuses.includes(status)) return { error: 'Status inválido' };
+    const player = room.players.find(p => p.id === playerId);
+    if (!player) return { error: 'Jogador não encontrado' };
+    player.status = status;
+    return room;
+  },
+
+  setDealer(roomId: string, playerId: string): Room | { error: string } {
+    const room = db[roomId];
+    if (!room) return { error: 'Sala não encontrada' };
+    const player = room.players.find(p => p.id === playerId);
+    if (!player) return { error: 'Jogador não encontrado' };
+    room.players.forEach(p => { p.isDealer = p.id === playerId; });
+    return room;
   },
 
   subscribeToRoom(roomId: string, res: Response): void {
@@ -77,14 +81,13 @@ export const RoomService = {
     oldRanking.forEach((p, index) => oldPositions.set(p.id, index));
     room.players.forEach(p => {
       p.score += (roundScores[p.id] || 0);
+      p.status = 'playing';
     });
     const newRanking = [...room.players].sort((a, b) => b.score - a.score);
     const newPositions = new Map<string, number>();
     newRanking.forEach((p, index) => newPositions.set(p.id, index));
     room.players.forEach(p => {
-      const oldPos = oldPositions.get(p.id) ?? 0;
-      const newPos = newPositions.get(p.id) ?? 0;
-      p.positionDelta = oldPos - newPos;
+      p.positionDelta = (oldPositions.get(p.id) ?? 0) - (newPositions.get(p.id) ?? 0);
     });
     room.round += 1;
     return room;

@@ -1,4 +1,6 @@
-import { Player } from '../types';
+import { Player, PlayerStatus } from '../types';
+import PlayerStatusSelector from './PlayerStatusSelector';
+import DealerButton from './DealerButton';
 
 type ControllerPlayerRowProps = {
   player: Player & { displayScore: number };
@@ -6,6 +8,8 @@ type ControllerPlayerRowProps = {
   roundScore: number;
   onOpenKeypad: (player: Player) => void;
   onRemove: (id: string) => void;
+  onUpdateStatus?: (playerId: string, status: PlayerStatus) => void;
+  onSetDealer?: (playerId: string) => void;
 };
 
 export default function ControllerPlayerRow({
@@ -14,6 +18,8 @@ export default function ControllerPlayerRow({
   roundScore,
   onOpenKeypad,
   onRemove,
+  onUpdateStatus,
+  onSetDealer,
 }: ControllerPlayerRowProps) {
   const isFirst = index === 0 && player.score > 0;
   const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}º`;
@@ -32,8 +38,20 @@ export default function ControllerPlayerRow({
         </div>
       </div>
       <div className="actions">
-        <button className="btn-round" onClick={() => onOpenKeypad(player)}>+ Rodada</button>
-        <button className="btn-del" onClick={() => onRemove(player.id)}>✕</button>
+        {onSetDealer && (
+          <DealerButton
+            isDealer={player.isDealer}
+            onSetDealer={() => onSetDealer(player.id)}
+          />
+        )}
+        {onUpdateStatus && (
+          <PlayerStatusSelector
+            status={player.status}
+            onSelectStatus={(status) => onUpdateStatus(player.id, status)}
+          />
+        )}
+        <button type="button" className="btn-round" onClick={() => onOpenKeypad(player)}>+ Rodada</button>
+        <button type="button" className="btn-del" onClick={() => onRemove(player.id)}>✕</button>
       </div>
     </div>
   );

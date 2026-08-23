@@ -30,7 +30,7 @@ describe('RoomController', () => {
       if (options && options.method === 'PUT') {
         return Promise.resolve({
           ok: true,
-          json: () => Promise.resolve({ id: '1', code: 'ABCD', round: 1, players: [{ id: '123', name: 'Alice', score: 0, isLocal: true, positionDelta: 0 }] })
+          json: () => Promise.resolve({ id: '1', code: 'ABCD', round: 1, players: [{ id: '123', name: 'Alice', score: 0, isLocal: true, positionDelta: 0, status: 'playing', isDealer: false }] })
         });
       }
       return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
@@ -64,6 +64,87 @@ describe('RoomController', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Alice')).toBeDefined();
+    });
+  });
+
+  it('updates player status and sets dealer', async () => {
+    globalThis.fetch = vi.fn().mockImplementation((url, options) => {
+      if (url === '/api/rooms/ABCD' && !options) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            id: '1',
+            code: 'ABCD',
+            round: 1,
+            players: [{ id: '123', name: 'Alice', score: 0, isLocal: true, positionDelta: 0, status: 'playing', isDealer: false }]
+          })
+        });
+      }
+      if (url === '/api/rooms/1/player/123/status' && options?.method === 'PUT') {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            id: '1',
+            code: 'ABCD',
+            round: 1,
+            players: [{ id: '123', name: 'Alice', score: 0, isLocal: true, positionDelta: 0, status: 'stopped', isDealer: false }]
+          })
+        });
+      }
+      if (url === '/api/rooms/1/dealer/123' && options?.method === 'PUT') {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            id: '1',
+            code: 'ABCD',
+            round: 1,
+            players: [{ id: '123', name: 'Alice', score: 0, isLocal: true, positionDelta: 0, status: 'stopped', isDealer: true }]
+          })
+        });
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/room/ABCD/controller']}>
+        <Routes>
+          <Route path="/room/:code/controller" element={<RoomController />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(mockEventSourceInstance).not.toBeNull();
+    });
+
+    act(() => {
+      mockEventSourceInstance?.onmessage?.({
+        data: JSON.stringify({
+          id: '1',
+          code: 'ABCD',
+          round: 1,
+          players: [{ id: '123', name: 'Alice', score: 0, isLocal: true, positionDelta: 0, status: 'playing', isDealer: false }]
+        })
+      } as MessageEvent);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Alice')).toBeDefined();
+    });
+
+    // Change status
+    fireEvent.click(screen.getByRole('button', { name: /Status atual: Jogando/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Parou' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Parou')).toBeDefined();
+    });
+
+    // Set dealer
+    fireEvent.click(screen.getByRole('button', { name: 'Definir como Dealer' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Dealer atual' })).toBeDefined();
     });
   });
 });

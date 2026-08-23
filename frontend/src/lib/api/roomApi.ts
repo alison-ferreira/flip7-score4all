@@ -1,4 +1,4 @@
-import { Room, Player } from '../../types';
+import { Room, Player, PlayerStatus } from '../../types';
 
 export async function createRoom(): Promise<Room> {
   const res = await fetch('/api/rooms', { method: 'POST' });
@@ -35,3 +35,22 @@ export async function finishRound(roomId: string, roundScores: Record<string, nu
   if (!res.ok) throw new Error('Erro ao finalizar rodada');
   return res.json();
 }
+
+export async function updatePlayerStatus(roomId: string, playerId: string, status: PlayerStatus): Promise<Room> {
+  const res = await fetch(`/api/rooms/${roomId}/player/${playerId}/status`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status })
+  });
+  if (!res.ok) throw new Error('Erro ao atualizar status do jogador');
+  return res.json();
+}
+
+export async function setDealer(roomId: string, playerId: string): Promise<Room> {
+  const res = await fetch(`/api/rooms/${roomId}/dealer/${playerId}`, {
+    method: 'PUT'
+  });
+  if (!res.ok) throw new Error('Erro ao definir dealer');
+  return res.json();
+}
+

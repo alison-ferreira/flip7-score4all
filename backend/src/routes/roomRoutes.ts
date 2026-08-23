@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { RoomService } from '../services/roomService';
+import { handleUpdatePlayerStatus, handleSetDealer } from './playerHandlers';
 
 const router = Router();
 
@@ -39,6 +40,10 @@ router.put('/:roomId', (req: Request, res: Response) => {
   RoomService.broadcastRoomUpdate(updatedRoom.id);
   res.json(updatedRoom);
 });
+
+router.put('/:roomId/player/:playerId/status', handleUpdatePlayerStatus);
+
+router.put('/:roomId/dealer/:playerId', handleSetDealer);
 
 router.post('/:idOrCode/join', (req: Request, res: Response) => {
   const idOrCode = req.params.idOrCode as string;

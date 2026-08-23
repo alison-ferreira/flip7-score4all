@@ -15,14 +15,20 @@ class MockEventSource {
 global.EventSource = MockEventSource as unknown as typeof EventSource;
 
 describe('RoomViewer', () => {
-  it('joins room and displays players', async () => {
+  it('joins room and displays players, local status banner, and status/dealer badges', async () => {
     globalThis.fetch = vi.fn().mockImplementation((url) => {
       if (url.includes('/join')) {
         return Promise.resolve({
           ok: true,
           json: () => Promise.resolve({
             room: {
-              id: '1', code: 'ABCD', round: 1, players: [{ id: '1', name: 'Bob', score: 10, isLocal: false, positionDelta: 0 }]
+              id: '1',
+              code: 'ABCD',
+              round: 1,
+              players: [
+                { id: '1', name: 'Bob', score: 10, isLocal: false, positionDelta: 0, status: 'stopped', isDealer: true },
+                { id: '2', name: 'Alice', score: 5, isLocal: false, positionDelta: 0, status: 'playing', isDealer: false }
+              ]
             }
           })
         });
@@ -48,7 +54,12 @@ describe('RoomViewer', () => {
     fireEvent.click(btn);
 
     await waitFor(() => {
-      expect(screen.getByText('10 pontos')).toBeDefined();
+      expect(screen.getByText(/10.*pontos/)).toBeDefined();
+      expect(screen.getByTestId('local-player-status-banner')).toBeDefined();
+      expect(screen.getByTestId('dealer-badge')).toBeDefined();
+      expect(screen.getAllByText('Parou').length).toBeGreaterThan(0);
+      expect(screen.getByText('Jogando')).toBeDefined();
     });
   });
 });
+

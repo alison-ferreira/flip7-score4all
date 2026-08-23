@@ -52,6 +52,63 @@ describe('RoomService', () => {
     });
   });
 
+  describe('updatePlayerStatus', () => {
+    it('TU-01: deve atualizar status exclusivo do jogador ou retornar erros adequados', () => {
+      const room = RoomService.createRoom();
+      const joinRes = RoomService.joinRoom(room.id, 'Ana');
+      if ('error' in joinRes) throw new Error('Erro ao juntar');
+      const player = joinRes.player;
+
+      // Status inicial padrão é 'playing'
+      expect(player.status).toBe('playing');
+
+      // Atualizar para 'stopped'
+      const updated = RoomService.updatePlayerStatus(room.id, player.id, 'stopped');
+      if ('error' in updated) throw new Error('Erro ao atualizar status');
+      expect(updated.players[0].status).toBe('stopped');
+
+      // Erro para status inválido
+      const invalidStatusRes = RoomService.updatePlayerStatus(room.id, player.id, 'invalid' as any);
+      expect(invalidStatusRes).toEqual({ error: 'Status inválido' });
+
+      // Erro para sala não encontrada
+      const invalidRoomRes = RoomService.updatePlayerStatus('invalid', player.id, 'bust');
+      expect(invalidRoomRes).toEqual({ error: 'Sala não encontrada' });
+
+      // Erro para jogador não encontrado
+      const invalidPlayerRes = RoomService.updatePlayerStatus(room.id, 'invalid-player', 'frozen');
+      expect(invalidPlayerRes).toEqual({ error: 'Jogador não encontrado' });
+    });
+  });
+
+  describe('setDealer', () => {
+    it('TU-02: deve definir apenas um jogador como Dealer por vez', () => {
+      const room = RoomService.createRoom();
+      const p1Res = RoomService.joinRoom(room.id, 'Ana');
+      const p2Res = RoomService.joinRoom(room.id, 'Beto');
+      if ('error' in p1Res || 'error' in p2Res) throw new Error('Erro ao juntar');
+
+      const p1 = p1Res.player;
+      const p2 = p2Res.player;
+
+      // Definir P1 como dealer
+      const res1 = RoomService.setDealer(room.id, p1.id);
+      if ('error' in res1) throw new Error('Erro ao definir dealer');
+      expect(res1.players.find(p => p.id === p1.id)?.isDealer).toBe(true);
+      expect(res1.players.find(p => p.id === p2.id)?.isDealer).toBe(false);
+
+      // Definir P2 como dealer desmarca P1
+      const res2 = RoomService.setDealer(room.id, p2.id);
+      if ('error' in res2) throw new Error('Erro ao definir dealer');
+      expect(res2.players.find(p => p.id === p1.id)?.isDealer).toBe(false);
+      expect(res2.players.find(p => p.id === p2.id)?.isDealer).toBe(true);
+
+      // Erros
+      expect(RoomService.setDealer('invalid', p1.id)).toEqual({ error: 'Sala não encontrada' });
+      expect(RoomService.setDealer(room.id, 'invalid-player')).toEqual({ error: 'Jogador não encontrado' });
+    });
+  });
+
   describe('SSE', () => {
     it('deve inscrever e transmitir atualizações', () => {
       const room = RoomService.createRoom();

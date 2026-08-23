@@ -73,4 +73,83 @@ describe('Room Controller API', () => {
       expect(res200.status).toBe(200);
     });
   });
+
+  describe('PUT /api/rooms/:roomId/player/:playerId/status (TI-01)', () => {
+    it('deve atualizar o status do jogador e retornar 200', async () => {
+      const createResponse = await request(app).post('/api/rooms');
+      const { id: roomId } = createResponse.body;
+      const joinResponse = await request(app).post(`/api/rooms/${roomId}/join`).send({ name: 'Alison' });
+      const playerId = joinResponse.body.player.id;
+
+      const res = await request(app)
+        .put(`/api/rooms/${roomId}/player/${playerId}/status`)
+        .send({ status: 'stopped' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.players[0].status).toBe('stopped');
+    });
+
+    it('deve retornar 400 se o status for invalido ou ausente', async () => {
+      const createResponse = await request(app).post('/api/rooms');
+      const { id: roomId } = createResponse.body;
+      const joinResponse = await request(app).post(`/api/rooms/${roomId}/join`).send({ name: 'Alison' });
+      const playerId = joinResponse.body.player.id;
+
+      const resEmpty = await request(app)
+        .put(`/api/rooms/${roomId}/player/${playerId}/status`)
+        .send({});
+      expect(resEmpty.status).toBe(400);
+
+      const resInvalid = await request(app)
+        .put(`/api/rooms/${roomId}/player/${playerId}/status`)
+        .send({ status: 'invalid_status' });
+      expect(resInvalid.status).toBe(400);
+    });
+
+    it('deve retornar 404 se a sala ou o jogador nao existirem', async () => {
+      const resRoom404 = await request(app)
+        .put('/api/rooms/invalid-room/player/invalid-player/status')
+        .send({ status: 'stopped' });
+      expect(resRoom404.status).toBe(404);
+
+      const createResponse = await request(app).post('/api/rooms');
+      const { id: roomId } = createResponse.body;
+      const resPlayer404 = await request(app)
+        .put(`/api/rooms/${roomId}/player/invalid-player/status`)
+        .send({ status: 'stopped' });
+      expect(resPlayer404.status).toBe(404);
+    });
+  });
+
+  describe('PUT /api/rooms/:roomId/dealer/:playerId (TI-02)', () => {
+    it('deve definir o dealer com sucesso e atualizar os demais jogadores', async () => {
+      const createResponse = await request(app).post('/api/rooms');
+      const { id: roomId } = createResponse.body;
+      const join1 = await request(app).post(`/api/rooms/${roomId}/join`).send({ name: 'Player1' });
+      const join2 = await request(app).post(`/api/rooms/${roomId}/join`).send({ name: 'Player2' });
+
+      const p1Id = join1.body.player.id;
+      const p2Id = join2.body.player.id;
+
+      const res1 = await request(app).put(`/api/rooms/${roomId}/dealer/${p1Id}`);
+      expect(res1.status).toBe(200);
+      expect(res1.body.players.find((p: { id: string }) => p.id === p1Id).isDealer).toBe(true);
+      expect(res1.body.players.find((p: { id: string }) => p.id === p2Id).isDealer).toBe(false);
+
+      const res2 = await request(app).put(`/api/rooms/${roomId}/dealer/${p2Id}`);
+      expect(res2.status).toBe(200);
+      expect(res2.body.players.find((p: { id: string }) => p.id === p1Id).isDealer).toBe(false);
+      expect(res2.body.players.find((p: { id: string }) => p.id === p2Id).isDealer).toBe(true);
+    });
+
+    it('deve retornar 404 se a sala ou o jogador nao existirem', async () => {
+      const resRoom404 = await request(app).put('/api/rooms/invalid-room/dealer/invalid-player');
+      expect(resRoom404.status).toBe(404);
+
+      const createResponse = await request(app).post('/api/rooms');
+      const { id: roomId } = createResponse.body;
+      const resPlayer404 = await request(app).put(`/api/rooms/${roomId}/dealer/invalid-player`);
+      expect(resPlayer404.status).toBe(404);
+    });
+  });
 });

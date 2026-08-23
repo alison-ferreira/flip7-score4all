@@ -1,3 +1,5 @@
+import { subscribeToRoom, broadcastRoomUpdate, clients } from './sseService';
+
 export type PlayerStatus = 'playing' | 'stopped' | 'bust' | 'frozen';
 
 export type Player = {
@@ -17,3 +19,6 @@ export type Room = {
   round: number;
   players: Player[];
 };
+
+export const db: Record<string, Room> = {};
+export { clients, subscribeToRoom, broadcastRoomUpdate };

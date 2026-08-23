@@ -63,4 +63,24 @@ describe('RoomService - Finish Round', () => {
     expect(p1.positionDelta).toBe(0);
     expect(p2.positionDelta).toBe(0);
   });
+
+  it('TU-03: deve resetar o status de todos os jogadores para playing no fim da rodada', () => {
+    const room = RoomService.createRoom();
+    RoomService.joinRoom(room.id, 'P1');
+    RoomService.joinRoom(room.id, 'P2');
+
+    const p1 = room.players.find((p) => p.name === 'P1')!;
+    const p2 = room.players.find((p) => p.name === 'P2')!;
+
+    RoomService.updatePlayerStatus(room.id, p1.id, 'stopped');
+    RoomService.updatePlayerStatus(room.id, p2.id, 'bust');
+
+    expect(p1.status).toBe('stopped');
+    expect(p2.status).toBe('bust');
+
+    RoomService.finishRound(room.id, {});
+
+    expect(p1.status).toBe('playing');
+    expect(p2.status).toBe('playing');
+  });
 });
