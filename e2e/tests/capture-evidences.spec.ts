@@ -13,6 +13,9 @@ test.describe('Captura de Evidências Visuais - Controle de Rodadas', () => {
 
     // 2. Controlador cria sala
     await homePage.getByRole('button', { name: 'Criar Nova Sala' }).click();
+    await homePage.getByPlaceholder('Digite seu nome...').fill('Admin');
+    await homePage.locator('#participate-toggle').click();
+    await homePage.getByRole('button', { name: /Entrar na Sala|Confirmar/i }).click();
     await expect(homePage.getByText(/SALA:/)).toBeVisible();
     await expect(homePage.getByText('Rodada 1')).toBeVisible();
 

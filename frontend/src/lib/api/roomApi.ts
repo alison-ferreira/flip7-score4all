@@ -1,8 +1,22 @@
-import { Room, Player, PlayerStatus, PlayerRoundDraft } from '../../types';
+import { Room, Player, PlayerStatus, PlayerRoundDraft, CreateRoomInput, ResetGameInput } from '../../types';
 
-export async function createRoom(): Promise<Room> {
-  const res = await fetch('/api/rooms', { method: 'POST' });
+export async function createRoom(input?: CreateRoomInput): Promise<Room> {
+  const res = await fetch('/api/rooms', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: input ? JSON.stringify(input) : undefined
+  });
   if (!res.ok) throw new Error('Erro ao criar sala');
+  return res.json();
+}
+
+export async function resetGame(roomId: string, input: ResetGameInput): Promise<Room> {
+  const res = await fetch(`/api/rooms/${roomId}/reset`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input)
+  });
+  if (!res.ok) throw new Error('Erro ao reiniciar partida');
   return res.json();
 }
 

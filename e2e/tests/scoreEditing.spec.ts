@@ -1,11 +1,10 @@
 import { test, expect } from '@playwright/test';
+import { createRoomAsController } from './helpers/controllerHelpers';
 
 test.describe('Edição de Pontuação da Rodada - E2E', () => {
   test('E2E-01: Persistência de edição na mesma rodada (Substituição e não acúmulo)', async ({ page }) => {
     // 1. Criar sala e adicionar jogador
-    await page.goto('/');
-    await page.getByRole('button', { name: 'Criar Nova Sala' }).click();
-    await expect(page.getByText(/SALA:/)).toBeVisible();
+    await createRoomAsController(page, { name: 'Admin', isPlaying: false });
 
     await page.getByPlaceholder('Adicionar jogador presencial...').fill('Alice');
     await page.getByRole('button', { name: 'Add' }).click();
@@ -59,12 +58,7 @@ test.describe('Edição de Pontuação da Rodada - E2E', () => {
     const viewerPage = await viewerContext.newPage();
 
     // 1. Controlador cria a sala e adiciona Alice
-    await controllerPage.goto('/');
-    await controllerPage.getByRole('button', { name: 'Criar Nova Sala' }).click();
-    await expect(controllerPage.getByText(/SALA:/)).toBeVisible();
-
-    const roomCodeText = await controllerPage.locator('.room-code').innerText();
-    const roomCode = roomCodeText.replace('SALA:', '').trim();
+    const roomCode = await createRoomAsController(controllerPage, { name: 'Admin', isPlaying: false });
 
     await controllerPage.getByPlaceholder('Adicionar jogador presencial...').fill('Alice');
     await controllerPage.getByRole('button', { name: 'Add' }).click();
@@ -108,12 +102,7 @@ test.describe('Edição de Pontuação da Rodada - E2E', () => {
     const viewerPage = await viewerContext.newPage();
 
     // 1. Controlador cria a sala e adiciona Alice
-    await controllerPage.goto('/');
-    await controllerPage.getByRole('button', { name: 'Criar Nova Sala' }).click();
-    await expect(controllerPage.getByText(/SALA:/)).toBeVisible();
-
-    const roomCodeText = await controllerPage.locator('.room-code').innerText();
-    const roomCode = roomCodeText.replace('SALA:', '').trim();
+    const roomCode = await createRoomAsController(controllerPage, { name: 'Admin', isPlaying: false });
 
     await controllerPage.getByPlaceholder('Adicionar jogador presencial...').fill('Alice');
     await controllerPage.getByRole('button', { name: 'Add' }).click();

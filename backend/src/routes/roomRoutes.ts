@@ -1,13 +1,12 @@
 import { Router, Request, Response } from 'express';
 import { RoomService } from '../services/roomService';
+import { handleCreateRoom, handleResetRoom } from './roomLifecycleHandlers';
 import { handleUpdatePlayerStatus, handleSetDealer, handleUpdatePlayerDraft } from './playerHandlers';
 
 const router = Router();
 
-router.post('/', (_req: Request, res: Response) => {
-  const room = RoomService.createRoom();
-  res.status(201).json(room);
-});
+router.post('/', handleCreateRoom);
+router.post('/:roomId/reset', handleResetRoom);
 
 router.get('/:idOrCode', (req: Request, res: Response) => {
   const idOrCode = req.params.idOrCode as string;
@@ -42,9 +41,7 @@ router.put('/:roomId', (req: Request, res: Response) => {
 });
 
 router.put('/:roomId/player/:playerId/status', handleUpdatePlayerStatus);
-
 router.put('/:roomId/dealer/:playerId', handleSetDealer);
-
 router.put('/:roomId/player/:playerId/draft', handleUpdatePlayerDraft);
 
 router.post('/:idOrCode/join', (req: Request, res: Response) => {

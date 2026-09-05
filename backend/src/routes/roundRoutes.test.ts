@@ -8,14 +8,18 @@ describe('POST /api/rooms/:roomId/round/finish', () => {
   });
 
   it('deve retornar 400 se roundScores for fornecido com tipo inválido', async () => {
-    const createResponse = await request(app).post('/api/rooms');
+    const createResponse = await request(app)
+      .post('/api/rooms')
+      .send({ controllerName: 'Admin', isControllerPlaying: false });
     const { id } = createResponse.body;
     const response = await request(app).post(`/api/rooms/${id}/round/finish`).send({ roundScores: 'invalid' });
     expect(response.status).toBe(400);
   });
 
   it('TI-01: deve finalizar a rodada, atualizar pontos e posições', async () => {
-    const createResponse = await request(app).post('/api/rooms');
+    const createResponse = await request(app)
+      .post('/api/rooms')
+      .send({ controllerName: 'Admin', isControllerPlaying: false });
     const { id } = createResponse.body;
     await request(app).post(`/api/rooms/${id}/join`).send({ name: 'P1' });
     await request(app).post(`/api/rooms/${id}/join`).send({ name: 'P2' });

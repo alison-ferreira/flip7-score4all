@@ -24,13 +24,13 @@ describe('RoomController', () => {
       if (url === '/api/rooms/ABCD' && !options) {
         return Promise.resolve({
           ok: true,
-          json: () => Promise.resolve({ id: '1', code: 'ABCD', round: 1, players: [] })
+          json: () => Promise.resolve({ id: '1', code: 'ABCD', round: 1, controllerName: 'Admin', players: [] })
         });
       }
       if (options && options.method === 'PUT') {
         return Promise.resolve({
           ok: true,
-          json: () => Promise.resolve({ id: '1', code: 'ABCD', round: 1, players: [{ id: '123', name: 'Alice', score: 0, isLocal: true, positionDelta: 0, status: 'playing', isDealer: false }] })
+          json: () => Promise.resolve({ id: '1', code: 'ABCD', round: 1, controllerName: 'Admin', players: [{ id: '123', name: 'Alice', score: 0, isLocal: true, positionDelta: 0, status: 'playing', isDealer: false }] })
         });
       }
       return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
@@ -49,7 +49,7 @@ describe('RoomController', () => {
     });
 
     act(() => {
-      mockEventSourceInstance?.onmessage?.({ data: JSON.stringify({ id: '1', code: 'ABCD', round: 1, players: [] }) } as MessageEvent);
+      mockEventSourceInstance?.onmessage?.({ data: JSON.stringify({ id: '1', code: 'ABCD', round: 1, controllerName: 'Admin', players: [] }) } as MessageEvent);
     });
 
     await waitFor(() => {
@@ -76,6 +76,7 @@ describe('RoomController', () => {
             id: '1',
             code: 'ABCD',
             round: 1,
+            controllerName: 'Admin',
             players: [{ id: '123', name: 'Alice', score: 0, isLocal: true, positionDelta: 0, status: 'playing', isDealer: false }]
           })
         });
@@ -87,6 +88,7 @@ describe('RoomController', () => {
             id: '1',
             code: 'ABCD',
             round: 1,
+            controllerName: 'Admin',
             players: [{ id: '123', name: 'Alice', score: 0, isLocal: true, positionDelta: 0, status: 'stopped', isDealer: false }]
           })
         });
@@ -98,6 +100,7 @@ describe('RoomController', () => {
             id: '1',
             code: 'ABCD',
             round: 1,
+            controllerName: 'Admin',
             players: [{ id: '123', name: 'Alice', score: 0, isLocal: true, positionDelta: 0, status: 'stopped', isDealer: true }]
           })
         });
@@ -123,6 +126,7 @@ describe('RoomController', () => {
           id: '1',
           code: 'ABCD',
           round: 1,
+          controllerName: 'Admin',
           players: [{ id: '123', name: 'Alice', score: 0, isLocal: true, positionDelta: 0, status: 'playing', isDealer: false }]
         })
       } as MessageEvent);

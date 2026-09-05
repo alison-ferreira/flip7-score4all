@@ -1,131 +1,93 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { RoomService, db } from './roomService';
+import { RoomService, db, Room, Player } from './roomService';
+import { sortPlayers } from './roomUtils';
 
-describe('RoomService', () => {
+describe('RoomService - Controller & Lifecycle (TU-01 a TU-09)', () => {
   beforeEach(() => {
     Object.keys(db).forEach((key) => delete db[key]);
   });
 
-  describe('createRoom', () => {
-    it('deve criar uma nova sala com a rodada igual a 1', () => {
-      const room = RoomService.createRoom();
-      expect(room).toHaveProperty('id');
-      expect(room).toHaveProperty('code');
-      expect(room.code.length).toBe(4);
-      expect(room.players).toEqual([]);
-      expect(room.round).toBe(1);
-      expect(db[room.id]).toBeDefined();
-    });
+  it('TU-01: createRoom com controlador jogando cria sala com jogador-controlador', () => {
+    const room = RoomService.createRoom({ controllerName: 'Ana', isControllerPlaying: true }) as Room;
+    expect(room.controllerName).toBe('Ana');
+    expect(room.isControllerPlaying).toBe(true);
+    expect(room.controllerPlayerId).toBeDefined();
+    expect(room.players).toHaveLength(1);
+    expect(room.players[0].id).toBe(room.controllerPlayerId);
+    expect(room.players[0].isController).toBe(true);
+    expect(room.players[0].status).toBe('playing');
   });
 
-  describe('getRoomByIdOrCode', () => {
-    it('deve retornar sala pelo ID e pelo código', () => {
-      const room = RoomService.createRoom();
-      expect(RoomService.getRoomByIdOrCode(room.id)).toEqual(room);
-      expect(RoomService.getRoomByIdOrCode(room.code)).toEqual(room);
-      expect(RoomService.getRoomByIdOrCode('invalid')).toBeUndefined();
-    });
+  it('TU-02: createRoom com controlador não-jogando cria sala com jogador fantasma', () => {
+    const room = RoomService.createRoom({ controllerName: 'Ana', isControllerPlaying: false }) as Room;
+    expect(room.controllerName).toBe('Ana');
+    expect(room.isControllerPlaying).toBe(false);
+    expect(room.controllerPlayerId).toBeNull();
+    expect(room.players).toHaveLength(1);
+    expect(room.players[0].isController).toBe(true);
+    expect(room.players[0].status).toBeUndefined();
+    expect(room.players[0].isDealer).toBeUndefined();
   });
 
-  describe('updateRoomPlayers', () => {
-    it('deve atualizar jogadores', () => {
-      const room = RoomService.createRoom();
-      const newPlayers = [{ id: '1', name: 'Ana', score: 10, isLocal: true, positionDelta: 0 }];
-      const updated = RoomService.updateRoomPlayers(room.id, newPlayers);
-      expect(updated?.players).toEqual(newPlayers);
-      expect(db[room.id].players).toEqual(newPlayers);
-    });
+  it('TU-03: createRoom sem nome retorna erro', () => {
+    const empty = RoomService.createRoom({ controllerName: '   ', isControllerPlaying: true });
+    expect(empty).toEqual({ error: 'Nome do controlador é obrigatório' });
+    const missing = RoomService.createRoom();
+    expect(missing).toEqual({ error: 'Nome do controlador é obrigatório' });
   });
 
-  describe('joinRoom', () => {
-    it('deve adicionar um novo jogador e tratar duplicatas', () => {
-      const room = RoomService.createRoom();
-      const res1 = RoomService.joinRoom(room.id, 'Ana');
-      if ('error' in res1) throw new Error('Erro inesperado');
-      expect(res1.isNew).toBe(true);
-      expect(res1.player.name).toBe('Ana');
-      expect(res1.player.positionDelta).toBe(0);
-
-      const res2 = RoomService.joinRoom(room.id, 'Ana');
-      if ('error' in res2) throw new Error('Erro inesperado');
-      expect(res2.isNew).toBe(false);
-    });
+  it('TU-04: resetGame preserva jogadores e zera pontuação', () => {
+    const room = RoomService.createRoom({ controllerName: 'Ana', isControllerPlaying: true }) as Room;
+    const joinRes = RoomService.joinRoom(room.id, 'Carlos') as { room: Room; player: Player };
+    joinRes.player.score = 50;
+    room.players[0].score = 30;
+    room.round = 3;
+    const reset = RoomService.resetGame(room.id, true) as Room;
+    expect(reset.round).toBe(1);
+    expect(reset.players).toHaveLength(2);
+    expect(reset.players.every(p => p.score === 0 && p.positionDelta === 0 && p.status === 'playing')).toBe(true);
   });
 
-  describe('updatePlayerStatus', () => {
-    it('TU-01: deve atualizar status exclusivo do jogador ou retornar erros adequados', () => {
-      const room = RoomService.createRoom();
-      const joinRes = RoomService.joinRoom(room.id, 'Ana');
-      if ('error' in joinRes) throw new Error('Erro ao juntar');
-      const player = joinRes.player;
-
-      // Status inicial padrão é 'playing'
-      expect(player.status).toBe('playing');
-
-      // Atualizar para 'stopped'
-      const updated = RoomService.updatePlayerStatus(room.id, player.id, 'stopped');
-      if ('error' in updated) throw new Error('Erro ao atualizar status');
-      expect(updated.players[0].status).toBe('stopped');
-
-      // Erro para status inválido
-      const invalidStatusRes = RoomService.updatePlayerStatus(room.id, player.id, 'invalid' as any);
-      expect(invalidStatusRes).toEqual({ error: 'Status inválido' });
-
-      // Erro para sala não encontrada
-      const invalidRoomRes = RoomService.updatePlayerStatus('invalid', player.id, 'bust');
-      expect(invalidRoomRes).toEqual({ error: 'Sala não encontrada' });
-
-      // Erro para jogador não encontrado
-      const invalidPlayerRes = RoomService.updatePlayerStatus(room.id, 'invalid-player', 'frozen');
-      expect(invalidPlayerRes).toEqual({ error: 'Jogador não encontrado' });
-    });
+  it('TU-05: resetGame muda controlador para jogador', () => {
+    const room = RoomService.createRoom({ controllerName: 'Ana', isControllerPlaying: false }) as Room;
+    const reset = RoomService.resetGame(room.id, true) as Room;
+    expect(reset.isControllerPlaying).toBe(true);
+    expect(reset.controllerPlayerId).toBeDefined();
+    expect(reset.players.find(p => p.isController)?.status).toBe('playing');
   });
 
-  describe('setDealer', () => {
-    it('TU-02: deve definir apenas um jogador como Dealer por vez', () => {
-      const room = RoomService.createRoom();
-      const p1Res = RoomService.joinRoom(room.id, 'Ana');
-      const p2Res = RoomService.joinRoom(room.id, 'Beto');
-      if ('error' in p1Res || 'error' in p2Res) throw new Error('Erro ao juntar');
-
-      const p1 = p1Res.player;
-      const p2 = p2Res.player;
-
-      // Definir P1 como dealer
-      const res1 = RoomService.setDealer(room.id, p1.id);
-      if ('error' in res1) throw new Error('Erro ao definir dealer');
-      expect(res1.players.find(p => p.id === p1.id)?.isDealer).toBe(true);
-      expect(res1.players.find(p => p.id === p2.id)?.isDealer).toBe(false);
-
-      // Definir P2 como dealer desmarca P1
-      const res2 = RoomService.setDealer(room.id, p2.id);
-      if ('error' in res2) throw new Error('Erro ao definir dealer');
-      expect(res2.players.find(p => p.id === p1.id)?.isDealer).toBe(false);
-      expect(res2.players.find(p => p.id === p2.id)?.isDealer).toBe(true);
-
-      // Erros
-      expect(RoomService.setDealer('invalid', p1.id)).toEqual({ error: 'Sala não encontrada' });
-      expect(RoomService.setDealer(room.id, 'invalid-player')).toEqual({ error: 'Jogador não encontrado' });
-    });
+  it('TU-06: resetGame muda controlador para não-jogador', () => {
+    const room = RoomService.createRoom({ controllerName: 'Ana', isControllerPlaying: true }) as Room;
+    const reset = RoomService.resetGame(room.id, false) as Room;
+    expect(reset.isControllerPlaying).toBe(false);
+    expect(reset.controllerPlayerId).toBeNull();
+    expect(reset.players.find(p => p.isController)?.status).toBeUndefined();
   });
 
-  describe('SSE', () => {
-    it('deve inscrever e transmitir atualizações', () => {
-      const room = RoomService.createRoom();
-      let writtenData = '';
-      let headers: Record<string, string> = {};
-      const mockRes: any = {
-        writeHead: (_status: number, h: Record<string, string>) => { headers = h; },
-        write: (data: string) => { writtenData += data; },
-        on: () => {},
-      };
-      RoomService.subscribeToRoom(room.id, mockRes);
-      expect(headers['Content-Type']).toBe('text/event-stream');
-      expect(writtenData).toContain(`data: {"id":"${room.id}"`);
+  it('TU-07: updateRoomPlayers detecta remoção do controlador e cria fantasma', () => {
+    const room = RoomService.createRoom({ controllerName: 'Ana', isControllerPlaying: true }) as Room;
+    const other: Player = { id: 'p2', name: 'Beto', score: 10, isLocal: true, positionDelta: 0, status: 'playing' };
+    const updated = RoomService.updateRoomPlayers(room.id, [other]);
+    expect(updated?.isControllerPlaying).toBe(false);
+    expect(updated?.controllerPlayerId).toBeNull();
+    expect(updated?.players).toHaveLength(2);
+    expect(updated?.players[1].isController).toBe(true);
+    expect(updated?.players[1].status).toBeUndefined();
+  });
 
-      writtenData = '';
-      RoomService.broadcastRoomUpdate(room.id);
-      expect(writtenData).toContain(`data: {"id":"${room.id}"`);
-    });
+  it('TU-08: rankeia jogadores com controlador não-jogador por último', () => {
+    const p1: Player = { id: '1', name: 'A', score: 20, isLocal: true, positionDelta: 0, status: 'playing' };
+    const ghost: Player = { id: '2', name: 'Ana', score: 0, isLocal: true, positionDelta: 0, isController: true };
+    const p2: Player = { id: '3', name: 'B', score: 50, isLocal: true, positionDelta: 0, status: 'playing' };
+    const sorted = sortPlayers([p1, ghost, p2]);
+    expect(sorted.map(p => p.id)).toEqual(['3', '1', '2']);
+  });
+
+  it('TU-09: joinRoom rejeita nome duplicado com controllerName', () => {
+    const room = RoomService.createRoom({ controllerName: 'Ana', isControllerPlaying: true }) as Room;
+    const res = RoomService.joinRoom(room.id, 'Ana');
+    if ('error' in res) throw new Error('Erro ao juntar');
+    expect(res.isNew).toBe(false);
+    expect(res.player.id).toBe(room.controllerPlayerId);
   });
 });

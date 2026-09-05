@@ -1,10 +1,8 @@
 import { test, expect } from '@playwright/test';
+import { createRoomAsController } from './helpers/controllerHelpers';
 
 test('cria sala e navega para o controlador', async ({ page }) => {
-  await page.goto('/');
-  await expect(page.getByText('Flip7 Score4All')).toBeVisible();
-
-  await page.getByRole('button', { name: 'Criar Nova Sala' }).click();
+  await createRoomAsController(page, { name: 'Admin', isPlaying: false });
 
   await expect(page.getByText(/SALA:/)).toBeVisible();
   await expect(page.getByText('Ranking & Ações')).toBeVisible();
@@ -21,7 +19,7 @@ test('cria sala e navega para o controlador', async ({ page }) => {
   
   await page.getByText('10', { exact: true }).click();
   await page.getByRole('button', { name: 'Confirmar' }).click();
-  
-  await expect(page.getByText('0 pontos')).toBeVisible();
-  await expect(page.getByText('+10 rodada')).toBeVisible();
+  const bobRow = page.locator('.player-row', { hasText: 'Bob' });
+  await expect(bobRow.getByText('0 pontos')).toBeVisible();
+  await expect(bobRow.getByText('+10 rodada')).toBeVisible();
 });

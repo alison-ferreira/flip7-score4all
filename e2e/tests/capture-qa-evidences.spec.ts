@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import path from 'path';
 import fs from 'fs';
+import { createRoomAsController } from './helpers/controllerHelpers';
 
 const EVIDENCES_DIR = path.resolve(__dirname, '../../tasks/prd-edicao-pontuacao-rodada/evidences');
 
@@ -19,12 +20,7 @@ test.describe('Captura de Evidências de QA - Edição de Pontuação da Rodada'
     const viewerPage = await viewerContext.newPage();
 
     // 1. Criar sala
-    await controllerPage.goto('/');
-    await controllerPage.getByRole('button', { name: 'Criar Nova Sala' }).click();
-    await expect(controllerPage.getByText(/SALA:/)).toBeVisible();
-
-    const roomCodeText = await controllerPage.locator('.room-code').innerText();
-    const roomCode = roomCodeText.replace('SALA:', '').trim();
+    const roomCode = await createRoomAsController(controllerPage, { name: 'Admin', isPlaying: false });
 
     await controllerPage.getByPlaceholder('Adicionar jogador presencial...').fill('Alice');
     await controllerPage.getByRole('button', { name: 'Add' }).click();
@@ -91,9 +87,7 @@ test.describe('Captura de Evidências de QA - Edição de Pontuação da Rodada'
     const mobileContext = await browser.newContext({ viewport: { width: 375, height: 667 } });
     const mobilePage = await mobileContext.newPage();
 
-    await mobilePage.goto('/');
-    await mobilePage.getByRole('button', { name: 'Criar Nova Sala' }).click();
-    await expect(mobilePage.getByText(/SALA:/)).toBeVisible();
+    await createRoomAsController(mobilePage, { name: 'Admin', isPlaying: false });
 
     await mobilePage.getByPlaceholder('Adicionar jogador presencial...').fill('Alice Mobile');
     await mobilePage.getByRole('button', { name: 'Add' }).click();

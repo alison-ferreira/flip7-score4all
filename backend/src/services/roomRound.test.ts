@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { RoomService, db } from './roomService';
+import { RoomService, db, Room } from './roomService';
 
 describe('RoomService - Finish Round', () => {
   beforeEach(() => {
@@ -12,14 +12,14 @@ describe('RoomService - Finish Round', () => {
   });
 
   it('TU-01: deve incrementar o número da rodada', () => {
-    const room = RoomService.createRoom();
+    const room = RoomService.createRoom({ controllerName: 'Admin', isControllerPlaying: true }) as Room;
     const initialRound = room.round;
-    const result = RoomService.finishRound(room.id, {}) as typeof room;
+    const result = RoomService.finishRound(room.id, {}) as Room;
     expect(result.round).toBe(initialRound + 1);
   });
 
   it('TU-02: deve calcular subida de posição (positionDelta > 0)', () => {
-    const room = RoomService.createRoom();
+    const room = RoomService.createRoom({ controllerName: 'Admin', isControllerPlaying: true }) as Room;
     RoomService.joinRoom(room.id, 'P1');
     RoomService.joinRoom(room.id, 'P2');
     RoomService.joinRoom(room.id, 'P3');
@@ -36,7 +36,7 @@ describe('RoomService - Finish Round', () => {
   });
 
   it('TU-03: deve calcular descida de posição (positionDelta < 0)', () => {
-    const room = RoomService.createRoom();
+    const room = RoomService.createRoom({ controllerName: 'Admin', isControllerPlaying: true }) as Room;
     RoomService.joinRoom(room.id, 'P1');
     RoomService.joinRoom(room.id, 'P2');
 
@@ -50,7 +50,7 @@ describe('RoomService - Finish Round', () => {
   });
 
   it('TU-04: deve calcular manutenção de posição (positionDelta === 0)', () => {
-    const room = RoomService.createRoom();
+    const room = RoomService.createRoom({ controllerName: 'Admin', isControllerPlaying: true }) as Room;
     RoomService.joinRoom(room.id, 'P1');
     RoomService.joinRoom(room.id, 'P2');
 
@@ -65,7 +65,7 @@ describe('RoomService - Finish Round', () => {
   });
 
   it('TU-03: deve resetar o status de todos os jogadores para playing no fim da rodada', () => {
-    const room = RoomService.createRoom();
+    const room = RoomService.createRoom({ controllerName: 'Admin', isControllerPlaying: true }) as Room;
     RoomService.joinRoom(room.id, 'P1');
     RoomService.joinRoom(room.id, 'P2');
 

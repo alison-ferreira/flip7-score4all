@@ -11,7 +11,7 @@ describe('Frontend Tests', () => {
   });
 
   describe('Home Page', () => {
-    it('creates a room and navigates', async () => {
+    it('creates a room with controller setup and navigates', async () => {
       globalThis.fetch = vi.fn().mockResolvedValue({
         ok: true,
         json: () => Promise.resolve({ code: 'ABCD' })
@@ -26,8 +26,18 @@ describe('Frontend Tests', () => {
       const createBtn = screen.getByText('Criar Nova Sala');
       fireEvent.click(createBtn);
 
+      const nameInput = screen.getByLabelText(/seu nome/i);
+      fireEvent.change(nameInput, { target: { value: 'Lucas' } });
+
+      const enterBtn = screen.getByRole('button', { name: /confirmar configuração do controlador/i });
+      fireEvent.click(enterBtn);
+
       await waitFor(() => {
-        expect(globalThis.fetch).toHaveBeenCalledWith('/api/rooms', { method: 'POST' });
+        expect(globalThis.fetch).toHaveBeenCalledWith('/api/rooms', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ controllerName: 'Lucas', isControllerPlaying: true })
+        });
       });
     });
 

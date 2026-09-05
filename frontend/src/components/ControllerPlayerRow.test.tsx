@@ -37,6 +37,36 @@ describe('ControllerPlayerRow', () => {
     expect(screen.getByText('10 pontos')).toBeDefined();
   });
 
+  it('TU-16 — ControllerPlayerRow exibe badge Gamepad2 para controlador', () => {
+    const controllerPlayer: Player = { ...mockPlayer, isController: true };
+    render(
+      <ControllerPlayerRow
+        player={controllerPlayer}
+        index={0}
+        onOpenKeypad={vi.fn()}
+        onRemove={vi.fn()}
+      />
+    );
+
+    const badge = screen.getByTestId('controller-badge');
+    expect(badge).toBeDefined();
+    expect(screen.getByLabelText('Controlador da sala')).toBeDefined();
+  });
+
+  it('TU-17 — ControllerPlayerRow exibe "Você" para controlador-jogador', () => {
+    render(
+      <ControllerPlayerRow
+        player={{ ...mockPlayer, isController: true }}
+        index={0}
+        isCurrentController={true}
+        onOpenKeypad={vi.fn()}
+        onRemove={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText('Você')).toBeDefined();
+  });
+
   it('renders round draft badge when roundDraft is present', () => {
     const playerWithDraft: Player = {
       ...mockPlayer,
@@ -63,19 +93,15 @@ describe('ControllerPlayerRow', () => {
   });
 
   it('triggers onUpdateStatus when status option is clicked', () => {
-    const onOpenKeypad = vi.fn();
-    const onRemove = vi.fn();
     const onUpdateStatus = vi.fn();
-    const onSetDealer = vi.fn();
 
     render(
       <ControllerPlayerRow
         player={mockPlayer}
         index={0}
-        onOpenKeypad={onOpenKeypad}
-        onRemove={onRemove}
+        onOpenKeypad={vi.fn()}
+        onRemove={vi.fn()}
         onUpdateStatus={onUpdateStatus}
-        onSetDealer={onSetDealer}
       />
     );
 
@@ -86,18 +112,14 @@ describe('ControllerPlayerRow', () => {
   });
 
   it('triggers onSetDealer when dealer button is clicked', () => {
-    const onOpenKeypad = vi.fn();
-    const onRemove = vi.fn();
-    const onUpdateStatus = vi.fn();
     const onSetDealer = vi.fn();
 
     render(
       <ControllerPlayerRow
         player={mockPlayer}
         index={0}
-        onOpenKeypad={onOpenKeypad}
-        onRemove={onRemove}
-        onUpdateStatus={onUpdateStatus}
+        onOpenKeypad={vi.fn()}
+        onRemove={vi.fn()}
         onSetDealer={onSetDealer}
       />
     );

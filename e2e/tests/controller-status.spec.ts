@@ -1,11 +1,10 @@
 import { test, expect } from '@playwright/test';
+import { createRoomAsController } from './helpers/controllerHelpers';
 
 test.describe('E2E-01: Interação e UI do Controlador (Status e Dealer)', () => {
   test('Alternar status e definir dealer com atualização automática na UI do controlador', async ({ page }) => {
     // 1. Criar a sala
-    await page.goto('/');
-    await page.getByRole('button', { name: 'Criar Nova Sala' }).click();
-    await expect(page.getByText(/SALA:/)).toBeVisible();
+    await createRoomAsController(page, { name: 'Admin', isPlaying: false });
 
     // 2. Adicionar jogadores presenciais Alice e Bob
     await page.getByPlaceholder('Adicionar jogador presencial...').fill('Alice');

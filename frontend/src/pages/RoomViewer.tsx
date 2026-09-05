@@ -3,8 +3,8 @@ import { useParams } from 'react-router-dom';
 import { useRoomSync } from '../hooks/useRoomSync';
 import { AnimatePresence } from 'framer-motion';
 import ViewerPlayerRow from '../components/ViewerPlayerRow';
+import ViewerHeader from '../components/ViewerHeader';
 import { joinRoom as apiJoinRoom } from '../lib/api/roomApi';
-import { STATUS_CONFIG } from '../constants/statusConfig';
 
 export default function RoomViewer() {
   const { code } = useParams<{ code: string }>();
@@ -29,9 +29,7 @@ export default function RoomViewer() {
   if (!hasJoined) {
     return (
       <div className="container">
-        <header>
-          <h1>Flip7 Score4All</h1>
-        </header>
+        <header><h1>Flip7 Score4All</h1></header>
         <div className="panel">
           <h2 className="justify-center">Entrar na Sala {code}</h2>
           <form onSubmit={handleJoin} className="input-group">
@@ -45,35 +43,16 @@ export default function RoomViewer() {
 
   if (!room) return <div className="container"><p className="w-full text-center">Carregando sala...</p></div>;
 
-  const rankedPlayers = [...room.players].sort((a, b) => b.score - a.score);
+  const rankedActive = [...room.players]
+    .filter((p) => !(p.isController && !room.isControllerPlaying))
+    .sort((a, b) => b.score - a.score);
+  const ghost = room.players.find((p) => p.isController && !room.isControllerPlaying);
+  const rankedPlayers = ghost ? [...rankedActive, ghost] : rankedActive;
   const localPlayer = room.players.find((p) => p.name.toLowerCase() === playerName.toLowerCase());
-  const localStatus = localPlayer?.status || 'playing';
-  const statusCfg = STATUS_CONFIG[localStatus] || STATUS_CONFIG.playing;
-  const StatusIcon = statusCfg.icon;
 
   return (
     <div className="container">
-      <header className="flex flex-col gap-3 room-header p-4">
-        <div className="flex justify-between items-center w-full justify-items-center">
-          <h1>Ranking</h1>
-          <div className="room-code">SALA: {room.code}</div>
-        </div>
-        <div className="flex justify-between items-center w-full">
-          <div className="text-lg font-bold text-slate-400">Rodada {room.round}</div>
-          {localPlayer && (
-            <div
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-medium ${statusCfg.bgClass}`}
-              aria-label={`Seu status: ${statusCfg.label}`}
-              data-testid="local-player-status-banner"
-            >
-              <span className="text-xs opacity-75">Seu Status:</span>
-              <StatusIcon className="w-4 h-4" />
-              <span className="font-bold">{statusCfg.label}</span>
-            </div>
-          )}
-        </div>
-      </header>
-
+      <ViewerHeader code={room.code} round={room.round} localPlayer={localPlayer} />
       <div className="panel">
         <div className="ranking-list">
           {rankedPlayers.length === 0 ? (
@@ -95,4 +74,3 @@ export default function RoomViewer() {
     </div>
   );
 }
-

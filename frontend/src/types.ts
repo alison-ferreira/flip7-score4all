@@ -16,6 +16,7 @@ export type Player = {
   status?: PlayerStatus;
   isDealer?: boolean;
   roundDraft?: PlayerRoundDraft;
+  isController?: boolean;
 };
 
 export type Room = {
@@ -24,4 +25,16 @@ export type Room = {
   createdAt: number;
   round: number;
   players: Player[];
+  controllerName?: string;
+  controllerPlayerId?: string | null;
+  isControllerPlaying?: boolean;
+};
+
+export type CreateRoomInput = {
+  controllerName: string;
+  isControllerPlaying: boolean;
+};
+
+export type ResetGameInput = {
+  isControllerPlaying: boolean;
 };

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { createRoomAsController } from './helpers/controllerHelpers';
 
 test.describe('Controle de Rodadas - E2E', () => {
   test('E2E-01: Fluxo completo do Controlador e Participante com ocultação de parciais e revelação por rodada', async ({ browser }) => {
@@ -11,15 +12,8 @@ test.describe('Controle de Rodadas - E2E', () => {
     const participantPage = await participantContext.newPage();
 
     // 1. Controlador cria a sala
-    await controllerPage.goto('/');
-    await controllerPage.getByRole('button', { name: 'Criar Nova Sala' }).click();
-    await expect(controllerPage.getByText(/SALA:/)).toBeVisible();
+    const roomCode = await createRoomAsController(controllerPage, { name: 'Admin', isPlaying: false });
     await expect(controllerPage.getByText('Rodada 1')).toBeVisible();
-
-    // Extrai o código da sala
-    const roomCodeElement = controllerPage.locator('.room-code');
-    const roomCodeText = await roomCodeElement.innerText();
-    const roomCode = roomCodeText.replace('SALA:', '').trim();
 
     // Controlador adiciona jogador presencial "Alice"
     await controllerPage.getByPlaceholder('Adicionar jogador presencial...').fill('Alice');

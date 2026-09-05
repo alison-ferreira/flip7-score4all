@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { createRoomAsController } from './helpers/controllerHelpers';
 
 test.describe('E2E-02: UI do Visualizador Logado (Status Banner, Status Badges e Dealer)', () => {
   test('Exibe status do próprio jogador no cabeçalho e atualizações de status/dealer na lista em tempo real', async ({ browser }) => {
@@ -6,12 +7,7 @@ test.describe('E2E-02: UI do Visualizador Logado (Status Banner, Status Badges e
     const controllerContext = await browser.newContext();
     const controllerPage = await controllerContext.newPage();
 
-    await controllerPage.goto('/');
-    await controllerPage.getByRole('button', { name: 'Criar Nova Sala' }).click();
-    await expect(controllerPage.getByText(/SALA:/)).toBeVisible();
-
-    const roomCodeText = await controllerPage.locator('.room-code').innerText();
-    const roomCode = roomCodeText.replace('SALA:', '').trim();
+    const roomCode = await createRoomAsController(controllerPage, { name: 'Admin', isPlaying: false });
 
     // Adicionar jogadores no controlador: Bob e Alice
     await controllerPage.getByPlaceholder('Adicionar jogador presencial...').fill('Bob');

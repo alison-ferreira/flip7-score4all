@@ -24,6 +24,33 @@ describe('ViewerPlayerRow', () => {
     expect(screen.queryByTestId('dealer-badge')).toBeNull();
   });
 
+  it('TU-18 — ViewerPlayerRow exibe badge de controlador', () => {
+    const controllerPlayer: Player = { ...basePlayer, isController: true };
+    render(<ViewerPlayerRow player={controllerPlayer} index={0} isCurrentViewer={false} />);
+
+    expect(screen.getByTestId('controller-badge')).toBeDefined();
+    expect(screen.getByLabelText('Controlador da sala')).toBeDefined();
+  });
+
+  it('TU-19 — ViewerPlayerRow renderiza controlador não-jogador em cinza', () => {
+    const ghostController: Player = {
+      id: 'p-ctrl',
+      name: 'Mestre',
+      score: 0,
+      isLocal: true,
+      positionDelta: 0,
+      isController: true,
+      status: undefined,
+    };
+
+    render(<ViewerPlayerRow player={ghostController} index={1} isCurrentViewer={false} />);
+
+    const row = screen.getByTestId('ghost-controller-row');
+    expect(row).toBeDefined();
+    expect(row.className).toContain('opacity-50');
+    expect(screen.queryByTestId('player-status-badge')).toBeNull();
+  });
+
   it('displays dealer badge when player is dealer', () => {
     const dealerPlayer: Player = { ...basePlayer, isDealer: true };
     render(<ViewerPlayerRow player={dealerPlayer} index={1} isCurrentViewer={false} />);

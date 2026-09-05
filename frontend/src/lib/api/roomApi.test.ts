@@ -73,3 +73,62 @@ describe('roomApi - Player status e dealer', () => {
     await expect(setDealer('room-1', 'player-1')).rejects.toThrow('Erro ao definir dealer');
   });
 });
+
+describe('roomApi - createRoom e resetGame', () => {
+  it('deve chamar createRoom com payload correto', async () => {
+    const mockRoom: Room = {
+      id: 'room-1',
+      code: 'ABCD',
+      createdAt: 123456789,
+      round: 1,
+      players: [],
+      controllerName: 'Ana',
+      isControllerPlaying: true,
+      controllerPlayerId: 'p1',
+    };
+
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockRoom,
+    } as Response);
+
+    const result = await (await import('./roomApi')).createRoom({
+      controllerName: 'Ana',
+      isControllerPlaying: true,
+    });
+
+    expect(fetchSpy).toHaveBeenCalledWith('/api/rooms', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ controllerName: 'Ana', isControllerPlaying: true }),
+    });
+    expect(result).toEqual(mockRoom);
+  });
+
+  it('deve chamar resetGame com payload correto', async () => {
+    const mockRoom: Room = {
+      id: 'room-1',
+      code: 'ABCD',
+      createdAt: 123456789,
+      round: 1,
+      players: [],
+      isControllerPlaying: false,
+    };
+
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockRoom,
+    } as Response);
+
+    const result = await (await import('./roomApi')).resetGame('room-1', {
+      isControllerPlaying: false,
+    });
+
+    expect(fetchSpy).toHaveBeenCalledWith('/api/rooms/room-1/reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isControllerPlaying: false }),
+    });
+    expect(result).toEqual(mockRoom);
+  });
+});

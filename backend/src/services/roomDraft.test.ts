@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { RoomService, db } from './roomService';
+import { RoomService, db, Room } from './roomService';
 
 describe('RoomService - PlayerRoundDraft', () => {
   beforeEach(() => {
@@ -7,7 +7,7 @@ describe('RoomService - PlayerRoundDraft', () => {
   });
 
   it('TU-01: deve criar um novo draft no jogador', () => {
-    const room = RoomService.createRoom();
+    const room = RoomService.createRoom({ controllerName: 'Admin', isControllerPlaying: true }) as Room;
     const joinRes = RoomService.joinRoom(room.id, 'Ana');
     if ('error' in joinRes) throw new Error('Erro ao entrar na sala');
     const player = joinRes.player;
@@ -27,7 +27,7 @@ describe('RoomService - PlayerRoundDraft', () => {
   });
 
   it('TU-02: deve substituir um draft já existente de forma idempotente', () => {
-    const room = RoomService.createRoom();
+    const room = RoomService.createRoom({ controllerName: 'Admin', isControllerPlaying: true }) as Room;
     const joinRes = RoomService.joinRoom(room.id, 'Ana');
     if ('error' in joinRes) throw new Error('Erro ao entrar na sala');
     const player = joinRes.player;
@@ -54,7 +54,7 @@ describe('RoomService - PlayerRoundDraft', () => {
   });
 
   it('TU-03: deve consumir os drafts no finishRound e somar ao score consolidado', () => {
-    const room = RoomService.createRoom();
+    const room = RoomService.createRoom({ controllerName: 'Admin', isControllerPlaying: true }) as Room;
     const p1Res = RoomService.joinRoom(room.id, 'P1');
     const p2Res = RoomService.joinRoom(room.id, 'P2');
     if ('error' in p1Res || 'error' in p2Res) throw new Error('Erro ao entrar na sala');
